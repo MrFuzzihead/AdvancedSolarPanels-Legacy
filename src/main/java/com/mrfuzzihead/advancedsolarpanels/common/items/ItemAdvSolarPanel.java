@@ -1,57 +1,60 @@
 package com.mrfuzzihead.advancedsolarpanels.common.items;
 
-import cpw.mods.fml.relauncher.Side;
-import cpw.mods.fml.relauncher.SideOnly;
 import java.util.ArrayList;
 import java.util.List;
+
 import net.minecraft.block.Block;
 import net.minecraft.item.EnumRarity;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
 
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
+
 public class ItemAdvSolarPanel extends ItemBlock {
-   private List<String> itemNames;
 
-   public ItemAdvSolarPanel(Block b) {
-      super(b);
-      this.setMaxDamage(0);
-      this.setHasSubtypes(true);
-      this.itemNames = new ArrayList<>();
-      this.addItemsNames();
-   }
+    private List<String> itemNames;
 
-   public int getMetadata(int i) {
-      return i;
-   }
+    public ItemAdvSolarPanel(Block b) {
+        super(b);
+        this.setMaxDamage(0);
+        this.setHasSubtypes(true);
+        this.itemNames = new ArrayList<>();
+        this.addItemsNames();
+    }
 
-   public String getUnlocalizedName(ItemStack itemstack) {
-      return this.itemNames.get(itemstack.getItemDamage());
-   }
+    public int getMetadata(int i) {
+        return i;
+    }
 
-   public void addItemsNames() {
-      this.itemNames.add("blockAdvancedSolarPanel");
-      this.itemNames.add("blockHybridSolarPanel");
-      this.itemNames.add("blockUltimateSolarPanel");
-      this.itemNames.add("blockQuantumSolarPanel");
-      this.itemNames.add("blockQuantumGenerator");
-   }
+    public String getUnlocalizedName(ItemStack itemstack) {
+        return this.itemNames.get(itemstack.getItemDamage());
+    }
 
-   @SideOnly(Side.CLIENT)
-   public EnumRarity getRarity(ItemStack itemstack) {
-      int i = itemstack.getItemDamage();
-      switch (i) {
-         case 0:
-            return EnumRarity.uncommon;
-         case 1:
-            return EnumRarity.rare;
-         case 2:
-            return EnumRarity.epic;
-         case 3:
-            return EnumRarity.epic;
-         case 4:
-            return EnumRarity.epic;
-         default:
-            return EnumRarity.uncommon;
-      }
-   }
+    public void addItemsNames() {
+        this.itemNames.add("blockAdvancedSolarPanel");
+        this.itemNames.add("blockHybridSolarPanel");
+        this.itemNames.add("blockUltimateSolarPanel");
+        this.itemNames.add("blockQuantumSolarPanel");
+        this.itemNames.add("blockQuantumGenerator");
+    }
+
+    @SideOnly(Side.CLIENT)
+    public EnumRarity getRarity(ItemStack itemstack) {
+        int i = itemstack.getItemDamage();
+        switch (i) {
+            case 0:
+                return EnumRarity.uncommon;
+            case 1:
+                return EnumRarity.rare;
+            case 2:
+                return EnumRarity.epic;
+            case 3:
+                return EnumRarity.epic;
+            case 4:
+                return EnumRarity.epic;
+            default:
+                return EnumRarity.uncommon;
+        }
+    }
 }

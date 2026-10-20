@@ -1,44 +1,46 @@
 package com.mrfuzzihead.advancedsolarpanels.network;
 
-import cpw.mods.fml.common.network.FMLIndexedMessageToMessageCodec;
-import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelHandlerContext;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 
+import cpw.mods.fml.common.network.FMLIndexedMessageToMessageCodec;
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelHandlerContext;
+
 public class ASPChannelHandler extends FMLIndexedMessageToMessageCodec<IPacket> {
-   public ASPChannelHandler() {
-      for (Class clazz : ASPPacketHandler.packetTypes) {
-         this.addDiscriminator(ASPPacketHandler.packetTypes.indexOf(clazz), clazz);
-      }
-   }
 
-   public void encodeInto(ChannelHandlerContext ctx, IPacket msg, ByteBuf target) throws Exception {
-      ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    public ASPChannelHandler() {
+        for (Class clazz : ASPPacketHandler.packetTypes) {
+            this.addDiscriminator(ASPPacketHandler.packetTypes.indexOf(clazz), clazz);
+        }
+    }
 
-      try {
-         msg.write(new DataOutputStream(baos));
-      } catch (Throwable var6) {
-         var6.printStackTrace();
-      }
+    public void encodeInto(ChannelHandlerContext ctx, IPacket msg, ByteBuf target) throws Exception {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
-      target.writeBytes(baos.toByteArray());
-   }
+        try {
+            msg.write(new DataOutputStream(baos));
+        } catch (Throwable var6) {
+            var6.printStackTrace();
+        }
 
-   public void decodeInto(ChannelHandlerContext ctx, ByteBuf source, IPacket msg) {
-      byte[] arr = new byte[source.readableBytes()];
-      source.readBytes(arr);
-      ByteArrayInputStream bais = new ByteArrayInputStream(arr);
+        target.writeBytes(baos.toByteArray());
+    }
 
-      try {
-         msg.read(new DataInputStream(bais));
-      } catch (Throwable var7) {
-         var7.printStackTrace();
-         return;
-      }
+    public void decodeInto(ChannelHandlerContext ctx, ByteBuf source, IPacket msg) {
+        byte[] arr = new byte[source.readableBytes()];
+        source.readBytes(arr);
+        ByteArrayInputStream bais = new ByteArrayInputStream(arr);
 
-      msg.execute();
-   }
+        try {
+            msg.read(new DataInputStream(bais));
+        } catch (Throwable var7) {
+            var7.printStackTrace();
+            return;
+        }
+
+        msg.execute();
+    }
 }
