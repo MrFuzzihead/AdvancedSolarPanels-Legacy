@@ -1,9 +1,9 @@
-package advsolar.client.nei;
+package com.mrfuzzihead.advancedsolarpanels.client.nei;
 
-import advsolar.client.gui.GuiMolecularTransformer;
-import advsolar.utils.ItemStackUtil;
-import advsolar.utils.MTRecipeManager;
-import advsolar.utils.MTRecipeRecord;
+import com.mrfuzzihead.advancedsolarpanels.client.gui.GuiMolecularTransformer;
+import com.mrfuzzihead.advancedsolarpanels.utils.ItemStackUtil;
+import com.mrfuzzihead.advancedsolarpanels.utils.MTRecipeManager;
+import com.mrfuzzihead.advancedsolarpanels.utils.MTRecipeRecord;
 import codechicken.lib.gui.GuiDraw;
 import codechicken.nei.PositionedStack;
 import codechicken.nei.recipe.TemplateRecipeHandler;

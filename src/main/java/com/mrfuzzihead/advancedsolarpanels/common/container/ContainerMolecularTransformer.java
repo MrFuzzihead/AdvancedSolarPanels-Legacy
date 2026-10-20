@@ -1,7 +1,7 @@
-package advsolar.common.container;
+package com.mrfuzzihead.advancedsolarpanels.common.container;
 
-import advsolar.common.tiles.TileEntityMolecularTransformer;
-import advsolar.utils.MySlot;
+import com.mrfuzzihead.advancedsolarpanels.common.tiles.TileEntityMolecularTransformer;
+import com.mrfuzzihead.advancedsolarpanels.utils.MySlot;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.inventory.Container;

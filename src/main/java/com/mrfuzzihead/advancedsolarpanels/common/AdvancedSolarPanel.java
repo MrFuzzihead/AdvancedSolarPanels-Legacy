@@ -1,19 +1,19 @@
-package advsolar.common;
+package com.mrfuzzihead.advancedsolarpanels.common;
 
-import advsolar.common.blocks.BlockAdvSolarPanel;
-import advsolar.common.blocks.BlockMolecularTransformer;
-import advsolar.common.items.ItemAdvSolarPanel;
-import advsolar.common.items.ItemAdvanced;
-import advsolar.common.items.ItemAdvancedSolarHelmet;
-import advsolar.common.items.ItemMolecularTransformer;
-import advsolar.common.tiles.TileEntityAdvancedSolarPanel;
-import advsolar.common.tiles.TileEntityHybridSolarPanel;
-import advsolar.common.tiles.TileEntityMolecularTransformer;
-import advsolar.common.tiles.TileEntityQGenerator;
-import advsolar.common.tiles.TileEntityQuantumSolarPanel;
-import advsolar.common.tiles.TileEntityUltimateSolarPanel;
-import advsolar.network.ASPPacketHandler;
-import advsolar.utils.MTRecipeConfig;
+import com.mrfuzzihead.advancedsolarpanels.common.blocks.BlockAdvSolarPanel;
+import com.mrfuzzihead.advancedsolarpanels.common.blocks.BlockMolecularTransformer;
+import com.mrfuzzihead.advancedsolarpanels.common.items.ItemAdvSolarPanel;
+import com.mrfuzzihead.advancedsolarpanels.common.items.ItemAdvanced;
+import com.mrfuzzihead.advancedsolarpanels.common.items.ItemAdvancedSolarHelmet;
+import com.mrfuzzihead.advancedsolarpanels.common.items.ItemMolecularTransformer;
+import com.mrfuzzihead.advancedsolarpanels.common.tiles.TileEntityAdvancedSolarPanel;
+import com.mrfuzzihead.advancedsolarpanels.common.tiles.TileEntityHybridSolarPanel;
+import com.mrfuzzihead.advancedsolarpanels.common.tiles.TileEntityMolecularTransformer;
+import com.mrfuzzihead.advancedsolarpanels.common.tiles.TileEntityQGenerator;
+import com.mrfuzzihead.advancedsolarpanels.common.tiles.TileEntityQuantumSolarPanel;
+import com.mrfuzzihead.advancedsolarpanels.common.tiles.TileEntityUltimateSolarPanel;
+import com.mrfuzzihead.advancedsolarpanels.network.ASPPacketHandler;
+import com.mrfuzzihead.advancedsolarpanels.utils.MTRecipeConfig;
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.Mod;
 import cpw.mods.fml.common.SidedProxy;
@@ -47,8 +47,8 @@ import net.minecraftforge.oredict.ShapedOreRecipe;
 )
 public class AdvancedSolarPanel {
    @SidedProxy(
-      clientSide = "advsolar.client.ASPClientProxy",
-      serverSide = "advsolar.common.ASPServerProxy"
+      clientSide = "com.mrfuzzihead.advancedsolarpanels.client.ASPClientProxy",
+      serverSide = "com.mrfuzzihead.advancedsolarpanels.common.ASPServerProxy"
    )
    public static ASPServerProxy proxy;
    public static Block blockAdvSolarPanel;

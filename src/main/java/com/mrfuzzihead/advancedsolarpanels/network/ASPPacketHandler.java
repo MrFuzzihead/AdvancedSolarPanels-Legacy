@@ -1,4 +1,4 @@
-package advsolar.network;
+package com.mrfuzzihead.advancedsolarpanels.network;
 
 import com.google.common.collect.Lists;
 import cpw.mods.fml.common.network.FMLEmbeddedChannel;

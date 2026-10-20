@@ -1,4 +1,4 @@
-package advsolar.api;
+package com.mrfuzzihead.advancedsolarpanels.api;
 
 import cpw.mods.fml.common.FMLLog;
 import java.lang.reflect.Field;
@@ -13,7 +13,7 @@ public class ASPItemAPI {
    private static void lazyInit() {
       if (!inited) {
          try {
-            aspClass = Class.forName("advsolar.common.AdvancedSolarPanel");
+            aspClass = Class.forName("com.mrfuzzihead.advancedsolarpanels.common.AdvancedSolarPanel");
          } catch (Exception var1) {
             FMLLog.severe("Fatal exception hapenned when tried to instantiate ASP API.", new Object[0]);
          }

@@ -1,8 +1,8 @@
-package advsolar.client.gui;
+package com.mrfuzzihead.advancedsolarpanels.client.gui;
 
-import advsolar.common.container.ContainerMolecularTransformer;
-import advsolar.common.tiles.TileEntityMolecularTransformer;
-import advsolar.utils.MTRecipeManager;
+import com.mrfuzzihead.advancedsolarpanels.common.container.ContainerMolecularTransformer;
+import com.mrfuzzihead.advancedsolarpanels.common.tiles.TileEntityMolecularTransformer;
+import com.mrfuzzihead.advancedsolarpanels.utils.MTRecipeManager;
 import com.google.common.collect.Lists;
 import cpw.mods.fml.client.FMLClientHandler;
 import java.util.List;

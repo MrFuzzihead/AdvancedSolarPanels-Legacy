@@ -1,8 +1,8 @@
-package advsolar.client.gui;
+package com.mrfuzzihead.advancedsolarpanels.client.gui;
 
-import advsolar.common.tiles.TileEntityMolecularTransformer;
-import advsolar.common.tiles.TileEntityQGenerator;
-import advsolar.common.tiles.TileEntitySolarPanel;
+import com.mrfuzzihead.advancedsolarpanels.common.tiles.TileEntityMolecularTransformer;
+import com.mrfuzzihead.advancedsolarpanels.common.tiles.TileEntityQGenerator;
+import com.mrfuzzihead.advancedsolarpanels.common.tiles.TileEntitySolarPanel;
 import cpw.mods.fml.common.network.IGuiHandler;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.tileentity.TileEntity;

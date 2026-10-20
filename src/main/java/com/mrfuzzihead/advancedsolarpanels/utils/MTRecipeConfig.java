@@ -1,6 +1,6 @@
-package advsolar.utils;
+package com.mrfuzzihead.advancedsolarpanels.utils;
 
-import advsolar.common.AdvancedSolarPanel;
+import com.mrfuzzihead.advancedsolarpanels.common.AdvancedSolarPanel;
 import com.google.common.collect.Lists;
 import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.common.registry.GameRegistry;

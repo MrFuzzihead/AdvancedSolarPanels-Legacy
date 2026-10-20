@@ -1,6 +1,6 @@
-package advsolar.common.tiles;
+package com.mrfuzzihead.advancedsolarpanels.common.tiles;
 
-import advsolar.common.container.ContainerAdvSolarPanel;
+import com.mrfuzzihead.advancedsolarpanels.common.container.ContainerAdvSolarPanel;
 import ic2.api.energy.event.EnergyTileLoadEvent;
 import ic2.api.energy.event.EnergyTileUnloadEvent;
 import ic2.api.energy.tile.IEnergySource;

@@ -1,10 +1,10 @@
-package advsolar.common;
+package com.mrfuzzihead.advancedsolarpanels.common;
 
-import advsolar.api.MTAPI;
-import advsolar.common.tiles.TileEntityMolecularTransformer;
-import advsolar.common.tiles.TileEntityQGenerator;
-import advsolar.common.tiles.TileEntitySolarPanel;
-import advsolar.utils.MTRecipeManager;
+import com.mrfuzzihead.advancedsolarpanels.api.MTAPI;
+import com.mrfuzzihead.advancedsolarpanels.common.tiles.TileEntityMolecularTransformer;
+import com.mrfuzzihead.advancedsolarpanels.common.tiles.TileEntityQGenerator;
+import com.mrfuzzihead.advancedsolarpanels.common.tiles.TileEntitySolarPanel;
+import com.mrfuzzihead.advancedsolarpanels.utils.MTRecipeManager;
 import cpw.mods.fml.common.network.IGuiHandler;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.tileentity.TileEntity;

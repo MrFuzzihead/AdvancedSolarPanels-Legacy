@@ -1,8 +1,8 @@
-package advsolar.common.blocks;
+package com.mrfuzzihead.advancedsolarpanels.common.blocks;
 
-import advsolar.common.AdvancedSolarPanel;
-import advsolar.common.tiles.TileEntityBase;
-import advsolar.common.tiles.TileEntityMolecularTransformer;
+import com.mrfuzzihead.advancedsolarpanels.common.AdvancedSolarPanel;
+import com.mrfuzzihead.advancedsolarpanels.common.tiles.TileEntityBase;
+import com.mrfuzzihead.advancedsolarpanels.common.tiles.TileEntityMolecularTransformer;
 import java.util.Random;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockContainer;

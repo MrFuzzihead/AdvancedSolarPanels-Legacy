@@ -1,10 +1,10 @@
-package advsolar.common.tiles;
+package com.mrfuzzihead.advancedsolarpanels.common.tiles;
 
-import advsolar.common.AdvancedSolarPanel;
-import advsolar.common.container.ContainerMolecularTransformer;
-import advsolar.network.IReceiveServerEvents;
-import advsolar.network.PacketChangeState;
-import advsolar.utils.MTRecipeManager;
+import com.mrfuzzihead.advancedsolarpanels.common.AdvancedSolarPanel;
+import com.mrfuzzihead.advancedsolarpanels.common.container.ContainerMolecularTransformer;
+import com.mrfuzzihead.advancedsolarpanels.network.IReceiveServerEvents;
+import com.mrfuzzihead.advancedsolarpanels.network.PacketChangeState;
+import com.mrfuzzihead.advancedsolarpanels.utils.MTRecipeManager;
 import ic2.api.energy.event.EnergyTileLoadEvent;
 import ic2.api.energy.event.EnergyTileUnloadEvent;
 import ic2.api.energy.tile.IEnergySink;

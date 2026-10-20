@@ -1,4 +1,4 @@
-package advsolar.common.tiles;
+package com.mrfuzzihead.advancedsolarpanels.common.tiles;
 
 import ic2.api.network.INetworkDataProvider;
 import ic2.api.network.INetworkTileEntityEventListener;

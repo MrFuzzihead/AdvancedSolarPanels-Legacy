@@ -1,4 +1,4 @@
-package advsolar.network;
+package com.mrfuzzihead.advancedsolarpanels.network;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;

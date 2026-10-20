@@ -1,4 +1,4 @@
-package advsolar.network;
+package com.mrfuzzihead.advancedsolarpanels.network;
 
 import cpw.mods.fml.common.network.FMLIndexedMessageToMessageCodec;
 import io.netty.buffer.ByteBuf;

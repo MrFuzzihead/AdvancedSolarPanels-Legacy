@@ -1,4 +1,4 @@
-package advsolar.network;
+package com.mrfuzzihead.advancedsolarpanels.network;
 
 public interface IHasButton {
    void handleButtonClick(int var1);

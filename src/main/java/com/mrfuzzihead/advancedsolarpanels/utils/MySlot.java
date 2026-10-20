@@ -1,4 +1,4 @@
-package advsolar.utils;
+package com.mrfuzzihead.advancedsolarpanels.utils;
 
 import net.minecraft.inventory.IInventory;
 import net.minecraft.inventory.Slot;

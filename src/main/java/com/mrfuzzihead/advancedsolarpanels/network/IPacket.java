@@ -1,4 +1,4 @@
-package advsolar.network;
+package com.mrfuzzihead.advancedsolarpanels.network;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;

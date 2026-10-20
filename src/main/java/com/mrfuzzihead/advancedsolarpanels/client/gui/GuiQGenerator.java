@@ -1,9 +1,9 @@
-package advsolar.client.gui;
+package com.mrfuzzihead.advancedsolarpanels.client.gui;
 
-import advsolar.common.AdvancedSolarPanel;
-import advsolar.common.container.ContainerQGenerator;
-import advsolar.common.tiles.TileEntityQGenerator;
-import advsolar.network.PacketGUIPressButton;
+import com.mrfuzzihead.advancedsolarpanels.common.AdvancedSolarPanel;
+import com.mrfuzzihead.advancedsolarpanels.common.container.ContainerQGenerator;
+import com.mrfuzzihead.advancedsolarpanels.common.tiles.TileEntityQGenerator;
+import com.mrfuzzihead.advancedsolarpanels.network.PacketGUIPressButton;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import net.minecraft.client.Minecraft;

@@ -1,7 +1,7 @@
-package advsolar.utils;
+package com.mrfuzzihead.advancedsolarpanels.utils;
 
-import advsolar.api.IMTRecipeManager;
-import advsolar.common.AdvancedSolarPanel;
+import com.mrfuzzihead.advancedsolarpanels.api.IMTRecipeManager;
+import com.mrfuzzihead.advancedsolarpanels.common.AdvancedSolarPanel;
 import com.google.common.collect.Lists;
 import cpw.mods.fml.common.registry.GameData;
 import cpw.mods.fml.common.registry.GameRegistry.UniqueIdentifier;

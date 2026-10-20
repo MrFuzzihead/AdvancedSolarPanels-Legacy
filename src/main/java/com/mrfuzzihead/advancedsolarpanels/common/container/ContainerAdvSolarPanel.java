@@ -1,6 +1,6 @@
-package advsolar.common.container;
+package com.mrfuzzihead.advancedsolarpanels.common.container;
 
-import advsolar.common.tiles.TileEntitySolarPanel;
+import com.mrfuzzihead.advancedsolarpanels.common.tiles.TileEntitySolarPanel;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.inventory.Container;

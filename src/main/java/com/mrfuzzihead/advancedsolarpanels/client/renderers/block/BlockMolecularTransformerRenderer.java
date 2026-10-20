@@ -1,7 +1,7 @@
-package advsolar.client.renderers.block;
+package com.mrfuzzihead.advancedsolarpanels.client.renderers.block;
 
-import advsolar.common.AdvancedSolarPanel;
-import advsolar.common.tiles.TileEntityMolecularTransformer;
+import com.mrfuzzihead.advancedsolarpanels.common.AdvancedSolarPanel;
+import com.mrfuzzihead.advancedsolarpanels.common.tiles.TileEntityMolecularTransformer;
 import cpw.mods.fml.client.registry.ISimpleBlockRenderingHandler;
 import net.minecraft.block.Block;
 import net.minecraft.client.renderer.RenderBlocks;

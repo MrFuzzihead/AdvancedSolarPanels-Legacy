@@ -1,6 +1,6 @@
-package advsolar.common.items;
+package com.mrfuzzihead.advancedsolarpanels.common.items;
 
-import advsolar.common.AdvancedSolarPanel;
+import com.mrfuzzihead.advancedsolarpanels.common.AdvancedSolarPanel;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import java.util.ArrayList;

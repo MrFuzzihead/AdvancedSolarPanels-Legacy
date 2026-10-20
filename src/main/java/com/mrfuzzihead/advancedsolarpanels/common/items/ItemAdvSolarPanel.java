@@ -1,4 +1,4 @@
-package advsolar.common.items;
+package com.mrfuzzihead.advancedsolarpanels.common.items;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;

@@ -1,6 +1,6 @@
-package advsolar.client.renderers.tile;
+package com.mrfuzzihead.advancedsolarpanels.client.renderers.tile;
 
-import advsolar.common.tiles.TileEntityMolecularTransformer;
+import com.mrfuzzihead.advancedsolarpanels.common.tiles.TileEntityMolecularTransformer;
 import cpw.mods.fml.client.FMLClientHandler;
 import java.awt.Color;
 import java.awt.image.BufferedImage;

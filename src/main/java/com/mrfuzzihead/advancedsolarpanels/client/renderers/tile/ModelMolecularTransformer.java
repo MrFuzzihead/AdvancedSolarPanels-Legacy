@@ -1,4 +1,4 @@
-package advsolar.client.renderers.tile;
+package com.mrfuzzihead.advancedsolarpanels.client.renderers.tile;
 
 import net.minecraft.client.model.ModelBase;
 import net.minecraft.client.model.ModelRenderer;

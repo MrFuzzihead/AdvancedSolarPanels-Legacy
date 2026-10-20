@@ -1,8 +1,8 @@
-package advsolar.common.tiles;
+package com.mrfuzzihead.advancedsolarpanels.common.tiles;
 
-import advsolar.common.AdvancedSolarPanel;
-import advsolar.common.container.ContainerQGenerator;
-import advsolar.network.IHasButton;
+import com.mrfuzzihead.advancedsolarpanels.common.AdvancedSolarPanel;
+import com.mrfuzzihead.advancedsolarpanels.common.container.ContainerQGenerator;
+import com.mrfuzzihead.advancedsolarpanels.network.IHasButton;
 import ic2.api.Direction;
 import ic2.api.energy.event.EnergyTileLoadEvent;
 import ic2.api.energy.event.EnergyTileUnloadEvent;

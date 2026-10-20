@@ -1,4 +1,4 @@
-package advsolar.network;
+package com.mrfuzzihead.advancedsolarpanels.network;
 
 import net.minecraft.nbt.NBTTagCompound;
 

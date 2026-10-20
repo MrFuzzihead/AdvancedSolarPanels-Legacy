@@ -1,4 +1,4 @@
-package advsolar.client.nei;
+package com.mrfuzzihead.advancedsolarpanels.client.nei;
 
 import codechicken.nei.api.API;
 import codechicken.nei.api.IConfigureNEI;

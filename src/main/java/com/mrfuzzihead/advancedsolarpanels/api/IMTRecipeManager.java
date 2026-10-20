@@ -1,4 +1,4 @@
-package advsolar.api;
+package com.mrfuzzihead.advancedsolarpanels.api;
 
 import net.minecraft.item.ItemStack;
 

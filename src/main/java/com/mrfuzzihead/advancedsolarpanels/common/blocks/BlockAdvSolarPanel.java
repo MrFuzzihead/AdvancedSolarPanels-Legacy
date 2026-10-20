@@ -1,14 +1,14 @@
-package advsolar.common.blocks;
+package com.mrfuzzihead.advancedsolarpanels.common.blocks;
 
-import advsolar.client.ASPClientProxy;
-import advsolar.common.AdvancedSolarPanel;
-import advsolar.common.tiles.TileEntityAdvancedSolarPanel;
-import advsolar.common.tiles.TileEntityBase;
-import advsolar.common.tiles.TileEntityHybridSolarPanel;
-import advsolar.common.tiles.TileEntityQGenerator;
-import advsolar.common.tiles.TileEntityQuantumSolarPanel;
-import advsolar.common.tiles.TileEntitySolarPanel;
-import advsolar.common.tiles.TileEntityUltimateSolarPanel;
+import com.mrfuzzihead.advancedsolarpanels.client.ASPClientProxy;
+import com.mrfuzzihead.advancedsolarpanels.common.AdvancedSolarPanel;
+import com.mrfuzzihead.advancedsolarpanels.common.tiles.TileEntityAdvancedSolarPanel;
+import com.mrfuzzihead.advancedsolarpanels.common.tiles.TileEntityBase;
+import com.mrfuzzihead.advancedsolarpanels.common.tiles.TileEntityHybridSolarPanel;
+import com.mrfuzzihead.advancedsolarpanels.common.tiles.TileEntityQGenerator;
+import com.mrfuzzihead.advancedsolarpanels.common.tiles.TileEntityQuantumSolarPanel;
+import com.mrfuzzihead.advancedsolarpanels.common.tiles.TileEntitySolarPanel;
+import com.mrfuzzihead.advancedsolarpanels.common.tiles.TileEntityUltimateSolarPanel;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import java.util.List;
