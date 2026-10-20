@@ -1,0 +1,27 @@
+{
+	"modListVersion": 2,
+	"modList": [{
+		"modid": "${modId}",
+		"name": "${modName}",
+		"description": "Advanced solar panels is new generation of using solar power. This is addon for IndustrialCraft 2",
+		"version": "${modVersion}",
+		"mcversion": "${minecraftVersion}",
+		"url": "https://github.com/MrFuzzihead/AdvancedSolarPanels-Legacy",
+		"updateUrl": "https://github.com/MrFuzzihead/AdvancedSolarPanels-Legacy/releases/latest",
+		"authorList": [
+		  "MrFuzzihead",
+		  "SeNtiMeL",
+		  "Icedfire",
+		  "JarviceOne"
+		],
+		"credits": "Created by SeNtiMeL, based on original mod of Icedfire. Textures by Krezzard. Thanks mak326428 for help with develop.",
+		"logoFile": "",
+		"screenshots": [],
+		"parent": "",
+		"requiredMods": [],
+		"dependencies": ["required-after:IC2"],
+		"dependants": [],
+		"useDependencyInformation": false
+	}]
+}
+
