@@ -1,5 +1,6 @@
 package com.mrfuzzihead.advancedsolarpanels.common.blocks;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
@@ -13,14 +14,13 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.IIcon;
 import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
 
+import com.mrfuzzihead.advancedsolarpanels.AdvancedSolarPanel;
 import com.mrfuzzihead.advancedsolarpanels.client.ASPClientProxy;
-import com.mrfuzzihead.advancedsolarpanels.common.AdvancedSolarPanel;
 import com.mrfuzzihead.advancedsolarpanels.common.tiles.TileEntityAdvancedSolarPanel;
 import com.mrfuzzihead.advancedsolarpanels.common.tiles.TileEntityBase;
 import com.mrfuzzihead.advancedsolarpanels.common.tiles.TileEntityHybridSolarPanel;
@@ -31,8 +31,12 @@ import com.mrfuzzihead.advancedsolarpanels.common.tiles.TileEntityUltimateSolarP
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
+import ic2.api.item.IC2Items;
 
 public class BlockAdvSolarPanel extends BlockContainer {
+
+    public static final int MAX_METADATA = 4;
+    private static final int MAX_FACING = 5;
 
     public boolean qgActive;
     private IIcon[][] iconBuffer;
@@ -40,8 +44,21 @@ public class BlockAdvSolarPanel extends BlockContainer {
     public BlockAdvSolarPanel() {
         super(Material.iron);
         this.setHardness(3.0F);
+        this.setStepSound(Block.soundTypeMetal);
         this.setCreativeTab(AdvancedSolarPanel.ic2Tab);
         this.qgActive = false;
+    }
+
+    private static int clampMetadata(int metadata) {
+        return metadata >= 0 && metadata <= MAX_METADATA ? metadata : 0;
+    }
+
+    private static int clampSide(int side) {
+        return side >= 0 && side <= 5 ? side : 0;
+    }
+
+    private static int clampFacing(int facing) {
+        return facing >= 0 && facing <= MAX_FACING ? facing : 0;
     }
 
     public void registerBlockIcons(IIconRegister par1IconRegister) {
@@ -109,25 +126,33 @@ public class BlockAdvSolarPanel extends BlockContainer {
     }
 
     public IIcon getIcon(IBlockAccess world, int x, int y, int z, int blockSide) {
-        int blockMeta = world.getBlockMetadata(x, y, z);
+        if (this.iconBuffer == null) {
+            return null;
+        }
+        int blockMeta = clampMetadata(world.getBlockMetadata(x, y, z));
         TileEntity te = world.getTileEntity(x, y, z);
-        int facing = te instanceof TileEntityBase ? ((TileEntityBase) te).getFacing() : 0;
-        return isActive(world, x, y, z)
-            ? this.iconBuffer[blockMeta][ASPClientProxy.sideAndFacingToSpriteOffset[blockSide][facing] + 6]
-            : this.iconBuffer[blockMeta][ASPClientProxy.sideAndFacingToSpriteOffset[blockSide][facing]];
+        int facing = te instanceof TileEntityBase ? clampFacing(((TileEntityBase) te).getFacing()) : 0;
+        int spriteIndex = ASPClientProxy.sideAndFacingToSpriteOffset[clampSide(blockSide)][facing];
+        return isActive(world, x, y, z) ? this.iconBuffer[blockMeta][spriteIndex + 6]
+            : this.iconBuffer[blockMeta][spriteIndex];
     }
 
     public IIcon getIcon(int blockSide, int blockMeta) {
-        return this.iconBuffer[blockMeta][ASPClientProxy.sideAndFacingToSpriteOffset[blockSide][3]];
+        if (this.iconBuffer == null) {
+            return null;
+        }
+        int meta = clampMetadata(blockMeta);
+        return this.iconBuffer[meta][ASPClientProxy.sideAndFacingToSpriteOffset[clampSide(blockSide)][3]];
     }
 
-    public static boolean isActive(IBlockAccess var0, int var1, int var2, int var3) {
-        return ((TileEntityBase) var0.getTileEntity(var1, var2, var3)).getActive();
+    public static boolean isActive(IBlockAccess world, int x, int y, int z) {
+        TileEntity te = world.getTileEntity(x, y, z);
+        return te instanceof TileEntityBase && ((TileEntityBase) te).getActive();
     }
 
     public void breakBlock(World world, int i, int j, int k, Block par5, int par6) {
         TileEntity tileentity = world.getTileEntity(i, j, k);
-        if (tileentity != null && !(tileentity instanceof TileEntityQGenerator)) {
+        if (tileentity instanceof TileEntitySolarPanel && !(tileentity instanceof TileEntityQGenerator)) {
             this.dropItems((TileEntitySolarPanel) tileentity, world);
         }
 
@@ -135,16 +160,37 @@ public class BlockAdvSolarPanel extends BlockContainer {
         super.breakBlock(world, i, j, k, par5, par6);
     }
 
+    /**
+     * Mimics IC2 machines: a non-wrench break drops a Basic Machine Casing, while the IC2 wrench
+     * replaces the first drop with {@link TileEntitySolarPanel#getWrenchDrop(EntityPlayer)}. The
+     * charge-slot contents are appended separately.
+     */
+    @Override
+    public ArrayList<ItemStack> getDrops(World world, int x, int y, int z, int metadata, int fortune) {
+        ArrayList<ItemStack> drops = new ArrayList<>();
+        ItemStack casing = IC2Items.getItem("machine");
+        if (casing == null) {
+            AdvancedSolarPanel.addLog("IC2 Basic Machine Casing is missing; using a panel drop instead.");
+            drops.add(new ItemStack(this, 1, clampMetadata(metadata)));
+        } else {
+            drops.add(casing.copy());
+        }
+
+        // Charge-slot contents are dropped by breakBlock(), which runs on both the normal-break and
+        // wrench paths. Do not add them here or they would be duplicated.
+        return drops;
+    }
+
     public int quantityDropped(Random random) {
         return 1;
     }
 
     public int damageDropped(int i) {
-        return i;
+        return clampMetadata(i);
     }
 
     public TileEntity getBlockEntity(int i) {
-        switch (i) {
+        switch (clampMetadata(i)) {
             case 0:
                 return new TileEntityAdvancedSolarPanel();
             case 1:
@@ -179,7 +225,7 @@ public class BlockAdvSolarPanel extends BlockContainer {
     private void dropItems(TileEntitySolarPanel tileentity, World world) {
         Random rand = new Random();
         if (tileentity instanceof IInventory) {
-            IInventory inventory = tileentity;
+            IInventory inventory = (IInventory) tileentity;
 
             for (int i = 0; i < inventory.getSizeInventory(); i++) {
                 ItemStack item = inventory.getStackInSlot(i);
@@ -192,13 +238,7 @@ public class BlockAdvSolarPanel extends BlockContainer {
                         tileentity.xCoord + rx,
                         tileentity.yCoord + ry,
                         tileentity.zCoord + rz,
-                        new ItemStack(item.getItem(), item.stackSize, item.getItemDamage()));
-                    if (item.hasTagCompound()) {
-                        entityItem.getEntityItem()
-                            .setTagCompound(
-                                (NBTTagCompound) item.getTagCompound()
-                                    .copy());
-                    }
+                        item.copy());
 
                     float factor = 0.05F;
                     entityItem.motionX = rand.nextGaussian() * factor;
@@ -217,7 +257,7 @@ public class BlockAdvSolarPanel extends BlockContainer {
 
     @SideOnly(Side.CLIENT)
     public void getSubBlocks(Item item, CreativeTabs tab, List subItems) {
-        for (int ix = 0; ix < this.iconBuffer.length; ix++) {
+        for (int ix = 0; ix <= MAX_METADATA; ix++) {
             subItems.add(new ItemStack(this, 1, ix));
         }
     }

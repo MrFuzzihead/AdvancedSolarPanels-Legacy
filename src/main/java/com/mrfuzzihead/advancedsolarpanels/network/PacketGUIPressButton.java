@@ -56,16 +56,27 @@ public class PacketGUIPressButton extends IPacket {
 
     @Override
     public void execute() {
-        try {
-            WorldServer ws = DimensionManager.getWorld(this.dimID);
-            if (ws != null) {
-                TileEntity te = ws.getTileEntity(this.x, this.y, this.z);
-                if (te != null && te instanceof IHasButton) {
-                    ((IHasButton) te).handleButtonClick(this.buttonID);
+        final int dimensionId = this.dimID;
+        final int tileX = this.x;
+        final int tileY = this.y;
+        final int tileZ = this.z;
+        final int button = this.buttonID;
+        ASPPacketHandler.scheduleServer(new Runnable() {
+
+            @Override
+            public void run() {
+                try {
+                    WorldServer world = DimensionManager.getWorld(dimensionId);
+                    if (world != null) {
+                        TileEntity tileEntity = world.getTileEntity(tileX, tileY, tileZ);
+                        if (tileEntity instanceof IHasButton) {
+                            ((IHasButton) tileEntity).handleButtonClick(button);
+                        }
+                    }
+                } catch (Throwable throwable) {
+                    throwable.printStackTrace();
                 }
             }
-        } catch (Throwable var3) {
-            var3.printStackTrace();
-        }
+        });
     }
 }

@@ -39,8 +39,8 @@ public class ContainerMolecularTransformer extends Container {
 
     public void addCraftingToCrafters(ICrafting icrafting) {
         super.addCraftingToCrafters(icrafting);
-        icrafting.sendProgressBarUpdate(this, 0, this.tileentity.lastRecipeEnergyUsed & 65535);
-        icrafting.sendProgressBarUpdate(this, 1, this.tileentity.lastRecipeEnergyUsed >>> 16);
+        icrafting.sendProgressBarUpdate(this, 0, (int) this.tileentity.lastRecipeEnergyUsed & 65535);
+        icrafting.sendProgressBarUpdate(this, 1, (int) this.tileentity.lastRecipeEnergyUsed >>> 16);
         icrafting.sendProgressBarUpdate(this, 2, this.tileentity.lastRecipeEnergyPerOperation & 65535);
         icrafting.sendProgressBarUpdate(this, 3, this.tileentity.lastRecipeEnergyPerOperation >>> 16);
         icrafting.sendProgressBarUpdate(this, 4, this.tileentity.doWork ? 1 : 0);
@@ -55,8 +55,8 @@ public class ContainerMolecularTransformer extends Container {
 
         for (int i = 0; i < this.crafters.size(); i++) {
             ICrafting icrafting = (ICrafting) this.crafters.get(i);
-            icrafting.sendProgressBarUpdate(this, 0, this.tileentity.lastRecipeEnergyUsed & 65535);
-            icrafting.sendProgressBarUpdate(this, 1, this.tileentity.lastRecipeEnergyUsed >>> 16);
+            icrafting.sendProgressBarUpdate(this, 0, (int) this.tileentity.lastRecipeEnergyUsed & 65535);
+            icrafting.sendProgressBarUpdate(this, 1, (int) this.tileentity.lastRecipeEnergyUsed >>> 16);
             icrafting.sendProgressBarUpdate(this, 2, this.tileentity.lastRecipeEnergyPerOperation & 65535);
             icrafting.sendProgressBarUpdate(this, 3, this.tileentity.lastRecipeEnergyPerOperation >>> 16);
             if (this.doWork != (this.tileentity.doWork ? 1 : 0)) {
@@ -75,7 +75,7 @@ public class ContainerMolecularTransformer extends Container {
             icrafting.sendProgressBarUpdate(this, 8, this.tileentity.inputEU >>> 16);
         }
 
-        this.energyUsed = this.tileentity.lastRecipeEnergyUsed;
+        this.energyUsed = (int) this.tileentity.lastRecipeEnergyUsed;
         this.energyPerOperartion = this.tileentity.lastRecipeEnergyPerOperation;
         this.doWork = this.tileentity.doWork ? 1 : 0;
         this.lastProgress = this.tileentity.lastProgress;
@@ -85,11 +85,12 @@ public class ContainerMolecularTransformer extends Container {
 
     public void updateProgressBar(int index, int value) {
         if (index == 0) {
-            this.tileentity.lastRecipeEnergyUsed = this.tileentity.lastRecipeEnergyUsed & -65536 | value;
+            int usedLow = (int) this.tileentity.lastRecipeEnergyUsed;
+            this.tileentity.lastRecipeEnergyUsed = usedLow & -65536 | value;
         }
 
         if (index == 1) {
-            this.tileentity.lastRecipeEnergyUsed = this.tileentity.lastRecipeEnergyUsed & 65535 | value << 16;
+            this.tileentity.lastRecipeEnergyUsed = (int) this.tileentity.lastRecipeEnergyUsed & 65535 | value << 16;
         }
 
         if (index == 2) {

@@ -15,6 +15,7 @@ import com.google.common.collect.Lists;
 import com.mrfuzzihead.advancedsolarpanels.common.container.ContainerMolecularTransformer;
 import com.mrfuzzihead.advancedsolarpanels.common.tiles.TileEntityMolecularTransformer;
 import com.mrfuzzihead.advancedsolarpanels.utils.MTRecipeManager;
+import com.mrfuzzihead.advancedsolarpanels.utils.MTRecipeRecord;
 
 import cpw.mods.fml.client.FMLClientHandler;
 
@@ -25,7 +26,7 @@ public class GuiMolecularTransformer extends GuiContainer {
     private static ResourceLocation tex = new ResourceLocation(
         "advancedsolarpanel",
         "textures/gui/guiMolecularTransformerNew.png");
-    public static List<GuiMolecularTransformer.captionRecord> guiTextList = Lists.newArrayList();
+    private final List<GuiMolecularTransformer.captionRecord> guiTextList = Lists.newArrayList();
     public Minecraft mc = FMLClientHandler.instance()
         .getClient();
 
@@ -40,6 +41,7 @@ public class GuiMolecularTransformer extends GuiContainer {
     }
 
     public void setCaptionText() {
+        this.guiTextList.clear();
         GuiMolecularTransformer.captionRecord textToAdd = new GuiMolecularTransformer.captionRecord();
         textToAdd.textCaption = I18n.format("gui.MolecularTransformer.input", new Object[0]) + ": ";
         textToAdd.textWidth = this.mc.fontRenderer.getStringWidth(textToAdd.textCaption);
@@ -67,6 +69,14 @@ public class GuiMolecularTransformer extends GuiContainer {
                 this.maxTextXPos = guiTextList.get(i).textWidth;
             }
         }
+    }
+
+    private MTRecipeRecord getDisplayedRecipe() {
+        int index = this.tileentity.lastRecipeNumber;
+        if (index < 0 || index >= MTRecipeManager.transformerRecipes.size()) {
+            return null;
+        }
+        return MTRecipeManager.transformerRecipes.get(index);
     }
 
     public static String parsingNumber(String number) {
@@ -120,20 +130,23 @@ public class GuiMolecularTransformer extends GuiContainer {
                 yOffset + yTextInterval * 4,
                 16777215);
         } else {
-            ItemStack inputStack = MTRecipeManager.transformerRecipes.get(this.tileentity.lastRecipeNumber).inputStack;
-            ItemStack outputStack = MTRecipeManager.transformerRecipes
-                .get(this.tileentity.lastRecipeNumber).outputStack;
+            MTRecipeRecord recipe = this.getDisplayedRecipe();
+            ItemStack inputStack = recipe != null ? recipe.inputStack : this.tileentity.lastRecipeInput;
+            ItemStack outputStack = recipe != null ? recipe.outputStack : this.tileentity.lastRecipeOutput;
+            int energyPerOperation = recipe != null ? recipe.energyPerOperation
+                : this.tileentity.lastRecipeEnergyPerOperation;
+            String inputName = inputStack != null ? inputStack.getDisplayName() : "?";
+            String outputName = outputStack != null ? outputStack.getDisplayName() : "?";
             String inputEuFormated = parsingNumber(String.valueOf(this.tileentity.inputEU));
-            String energyPerOpFormated = parsingNumber(
-                String.valueOf(
-                    MTRecipeManager.transformerRecipes.get(this.tileentity.lastRecipeNumber).energyPerOperation));
+            String energyPerOpFormated = parsingNumber(String.valueOf(energyPerOperation));
+            int progress = Math.max(0, Math.min(100, this.tileentity.lastProgress));
             this.fontRendererObj.drawString(
-                guiTextList.get(0).textCaption + inputStack.getDisplayName(),
+                guiTextList.get(0).textCaption + inputName,
                 xOffset + this.maxTextXPos - guiTextList.get(0).textWidth,
                 yOffset,
                 16777215);
             this.fontRendererObj.drawString(
-                guiTextList.get(1).textCaption + outputStack.getDisplayName(),
+                guiTextList.get(1).textCaption + outputName,
                 xOffset + this.maxTextXPos - guiTextList.get(1).textWidth,
                 yOffset + yTextInterval * 1,
                 16777215);
@@ -148,7 +161,7 @@ public class GuiMolecularTransformer extends GuiContainer {
                 yOffset + yTextInterval * 3,
                 16777215);
             this.fontRendererObj.drawString(
-                guiTextList.get(4).textCaption + this.tileentity.lastProgress + "%",
+                guiTextList.get(4).textCaption + progress + "%",
                 xOffset + this.maxTextXPos - guiTextList.get(4).textWidth,
                 yOffset + yTextInterval * 4,
                 16777215);
@@ -164,13 +177,14 @@ public class GuiMolecularTransformer extends GuiContainer {
         GL11.glBlendFunc(770, 771);
         this.drawTexturedModalRect(h, k, 0, 0, this.xSize, this.ySize);
         GL11.glDisable(3042);
-        if (this.tileentity.lastProgress > 0) {
-            int l = this.tileentity.lastProgress * 15 / 100;
+        int progress = Math.max(0, Math.min(100, this.tileentity.lastProgress));
+        if (progress > 0) {
+            int l = progress * 15 / 100;
             this.drawTexturedModalRect(h + 23, k + 48, 221, 7, 10, l + 1);
         }
     }
 
-    public class captionRecord {
+    public static class captionRecord {
 
         public String textCaption;
         public int textWidth;

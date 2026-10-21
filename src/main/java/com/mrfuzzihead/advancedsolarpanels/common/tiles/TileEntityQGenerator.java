@@ -14,7 +14,7 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.util.ForgeDirection;
 
-import com.mrfuzzihead.advancedsolarpanels.common.AdvancedSolarPanel;
+import com.mrfuzzihead.advancedsolarpanels.AdvancedSolarPanel;
 import com.mrfuzzihead.advancedsolarpanels.common.container.ContainerQGenerator;
 import com.mrfuzzihead.advancedsolarpanels.network.IHasButton;
 
@@ -75,7 +75,7 @@ public class TileEntityQGenerator extends TileEntityBase
     }
 
     public void onLoaded() {
-        if (!this.worldObj.isRemote) {
+        if (!this.worldObj.isRemote && !this.addedToEnergyNet) {
             MinecraftForge.EVENT_BUS.post(new EnergyTileLoadEvent(this));
             this.addedToEnergyNet = true;
         }
@@ -134,8 +134,8 @@ public class TileEntityQGenerator extends TileEntityBase
 
     public void readFromNBT(NBTTagCompound nbttagcompound) {
         super.readFromNBT(nbttagcompound);
-        this.production = nbttagcompound.getInteger("production");
-        this.maxPacketSize = nbttagcompound.getInteger("maxPacketSize");
+        this.production = Math.max(1, nbttagcompound.getInteger("production"));
+        this.maxPacketSize = Math.max(1, nbttagcompound.getInteger("maxPacketSize"));
         this.lastX = nbttagcompound.getInteger("lastX");
         this.lastY = nbttagcompound.getInteger("lastY");
         this.lastZ = nbttagcompound.getInteger("lastZ");
@@ -215,17 +215,13 @@ public class TileEntityQGenerator extends TileEntityBase
     }
 
     public void changeProductionOutput(int value) {
-        this.production += value;
-        if (this.production < 1) {
-            this.production = 1;
-        }
+        long next = (long) this.production + value;
+        this.production = (int) Math.max(1L, Math.min(Integer.MAX_VALUE, next));
     }
 
     public void changeMaxPacketSize(int value) {
-        this.maxPacketSize += value;
-        if (this.maxPacketSize < 1) {
-            this.maxPacketSize = 1;
-        }
+        long next = (long) this.maxPacketSize + value;
+        this.maxPacketSize = (int) Math.max(1L, Math.min(Integer.MAX_VALUE, next));
     }
 
     public boolean emitsEnergyTo(TileEntity receiver, ForgeDirection direction) {

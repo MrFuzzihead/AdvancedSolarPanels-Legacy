@@ -2,6 +2,7 @@ package com.mrfuzzihead.advancedsolarpanels.network;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.IOException;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.nbt.CompressedStreamTools;
@@ -15,9 +16,12 @@ import cpw.mods.fml.relauncher.SideOnly;
 
 public class PacketChangeState extends IPacket {
 
+    private static final int MAX_NBT_BYTES = 1 << 20;
+
     private int x;
     private int y;
     private int z;
+    private int dimID;
     private int eventID;
     private NBTTagCompound nbtData;
 
@@ -26,8 +30,12 @@ public class PacketChangeState extends IPacket {
         this.x = bytes.readInt();
         this.y = bytes.readInt();
         this.z = bytes.readInt();
+        this.dimID = bytes.readInt();
         this.eventID = bytes.readInt();
         int length = bytes.readInt();
+        if (length < -1 || length > MAX_NBT_BYTES) {
+            throw new IOException("Invalid MT state NBT length: " + length);
+        }
         if (length != -1) {
             byte[] data = new byte[length];
             bytes.read(data, 0, length);
@@ -42,11 +50,15 @@ public class PacketChangeState extends IPacket {
         bytes.writeInt(this.x);
         bytes.writeInt(this.y);
         bytes.writeInt(this.z);
+        bytes.writeInt(this.dimID);
         bytes.writeInt(this.eventID);
         if (this.nbtData == null) {
             bytes.writeInt(-1);
         } else {
             byte[] nbtBytes = CompressedStreamTools.compress(this.nbtData);
+            if (nbtBytes.length > MAX_NBT_BYTES) {
+                throw new IOException("MT state NBT is too large: " + nbtBytes.length);
+            }
             bytes.writeInt(nbtBytes.length);
             bytes.write(nbtBytes);
         }
@@ -57,6 +69,7 @@ public class PacketChangeState extends IPacket {
         changeState.x = te.xCoord;
         changeState.y = te.yCoord;
         changeState.z = te.zCoord;
+        changeState.dimID = te.getWorldObj() != null ? te.getWorldObj().provider.dimensionId : 0;
         changeState.eventID = eventID;
         changeState.nbtData = nbtData;
         ASPPacketHandler.sendToAllPlayers(changeState);
@@ -65,10 +78,26 @@ public class PacketChangeState extends IPacket {
     @SideOnly(Side.CLIENT)
     @Override
     public void execute() {
-        World w = Minecraft.getMinecraft().theWorld;
-        TileEntity te = w.getTileEntity(this.x, this.y, this.z);
-        if (te != null && te instanceof IReceiveServerEvents) {
-            ((IReceiveServerEvents) te).onServerEvent(this.eventID, this.nbtData);
-        }
+        final int tileX = this.x;
+        final int tileY = this.y;
+        final int tileZ = this.z;
+        final int dimensionId = this.dimID;
+        final int event = this.eventID;
+        final NBTTagCompound data = this.nbtData;
+        Minecraft.getMinecraft()
+            .func_152344_a(new Runnable() {
+
+                @Override
+                public void run() {
+                    World world = Minecraft.getMinecraft().theWorld;
+                    if (world == null || world.provider.dimensionId != dimensionId) {
+                        return;
+                    }
+                    TileEntity tileEntity = world.getTileEntity(tileX, tileY, tileZ);
+                    if (tileEntity instanceof IReceiveServerEvents) {
+                        ((IReceiveServerEvents) tileEntity).onServerEvent(event, data);
+                    }
+                }
+            });
     }
 }

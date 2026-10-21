@@ -1,4 +1,4 @@
-package com.mrfuzzihead.advancedsolarpanels.common;
+package com.mrfuzzihead.advancedsolarpanels;
 
 import net.minecraft.block.Block;
 import net.minecraft.creativetab.CreativeTabs;
@@ -11,6 +11,7 @@ import net.minecraftforge.common.config.Configuration;
 import net.minecraftforge.oredict.OreDictionary;
 import net.minecraftforge.oredict.ShapedOreRecipe;
 
+import com.mrfuzzihead.advancedsolarpanels.common.ASPServerProxy;
 import com.mrfuzzihead.advancedsolarpanels.common.blocks.BlockAdvSolarPanel;
 import com.mrfuzzihead.advancedsolarpanels.common.blocks.BlockMolecularTransformer;
 import com.mrfuzzihead.advancedsolarpanels.common.items.ItemAdvSolarPanel;
@@ -45,7 +46,7 @@ import ic2.api.recipe.Recipes;
     modid = "AdvancedSolarPanel",
     name = "Advanced Solar Panels",
     dependencies = "required-after:IC2; after:gregtech_addon; after:AppliedEnergistics;",
-    version = "1.7.10-3.5.1")
+    version = Tags.VERSION)
 public class AdvancedSolarPanel {
 
     @SidedProxy(
@@ -122,7 +123,7 @@ public class AdvancedSolarPanel {
 
     public static void getIC2Tab() {
         for (int i = 0; i < CreativeTabs.creativeTabArray.length; i++) {
-            if (CreativeTabs.creativeTabArray[i].getTabLabel() == "IC2") {
+            if ("IC2".equals(CreativeTabs.creativeTabArray[i].getTabLabel())) {
                 ic2Tab = CreativeTabs.creativeTabArray[i];
             }
         }
@@ -136,6 +137,23 @@ public class AdvancedSolarPanel {
 
     public static void addLog(String logLine) {
         System.out.println("[AdvancedSolarPanel] " + logLine);
+    }
+
+    private static int clampConfig(String key, int value, int min) {
+        if (value < min) {
+            addLog("Config " + key + "=" + value + " is below the minimum " + min + "; clamping.");
+            return min;
+        }
+        return value;
+    }
+
+    private static void addCompressorRecipe(String inputName, ItemStack output) {
+        ItemStack input = IC2Items.getItem(inputName);
+        if (input == null) {
+            addLog("IC2 item '" + inputName + "' was not found; compressor recipe skipped.");
+            return;
+        }
+        Recipes.compressor.addRecipe(new RecipeInputItemStack(input, 1), null, new ItemStack[] { output });
     }
 
     @EventHandler
@@ -208,6 +226,25 @@ public class AdvancedSolarPanel {
                 .getBoolean(false);
             enableHardRecipes = config.get("recipes settings", "Enable hard recipes", true)
                 .getBoolean(true);
+
+            advGenDay = clampConfig("AdvancedSPGenDay", advGenDay, 0);
+            advGenNight = clampConfig("AdvancedSPGenNight", advGenNight, 0);
+            advStorage = clampConfig("AdvancedSPStorage", advStorage, 1);
+            advOutput = clampConfig("AdvancedSPOutput", advOutput, 1);
+            hGenDay = clampConfig("HybrydSPGenDay", hGenDay, 0);
+            hGenNight = clampConfig("HybrydSPGenNight", hGenNight, 0);
+            hStorage = clampConfig("HybrydSPStorage", hStorage, 1);
+            hOutput = clampConfig("HybrydSPOutput", hOutput, 1);
+            uhGenDay = clampConfig("UltimateHSPGenDay", uhGenDay, 0);
+            uhGenNight = clampConfig("UltimateHSPGenNight", uhGenNight, 0);
+            uhStorage = clampConfig("UltimateHSPStorage", uhStorage, 1);
+            uhOutput = clampConfig("UltimateHSPOutput", uhOutput, 1);
+            qpGenDay = clampConfig("QuantumSPGenDay", qpGenDay, 0);
+            qpGenNight = clampConfig("QuantumSPGenNight", qpGenNight, 0);
+            qpStorage = clampConfig("QuantumSPStorage", qpStorage, 1);
+            qpOutput = clampConfig("QuantumSPOutput", qpOutput, 1);
+            qgbaseProduction = clampConfig("quantumGeneratorDefaultProduction", qgbaseProduction, 1);
+            qgbaseMaxPacketSize = clampConfig("quantumGeneratorDefaultPacketSize", qgbaseMaxPacketSize, 1);
         } catch (Exception var7) {
             System.out.println("[AdvancedSolarPanels] error occurred parsing config file");
             throw new RuntimeException(var7);
@@ -272,22 +309,10 @@ public class AdvancedSolarPanel {
         itemQuantumCore = new ItemStack(itemAdvanced.setUnlocalizedName("itemQuantumCore"), 1, 13);
         itemMolecularTransformer = new ItemStack(blockMolecularTransformer, 1, 0);
         itemUHSP = new ItemStack(blockAdvSolarPanel, 1, 2);
-        Recipes.compressor.addRecipe(
-            new RecipeInputItemStack(IC2Items.getItem("iridiumOre"), 1),
-            null,
-            new ItemStack[] { ingotIridium });
-        Recipes.compressor.addRecipe(
-            new RecipeInputItemStack(IC2Items.getItem("UranFuel"), 1),
-            null,
-            new ItemStack[] { itemUranIngot });
-        Recipes.compressor.addRecipe(
-            new RecipeInputItemStack(IC2Items.getItem("uraniumOre"), 1),
-            null,
-            new ItemStack[] { itemUranIngot });
-        Recipes.compressor.addRecipe(
-            new RecipeInputItemStack(IC2Items.getItem("crushedUraniumOre"), 1),
-            null,
-            new ItemStack[] { itemUranIngot });
+        addCompressorRecipe("iridiumOre", ingotIridium);
+        addCompressorRecipe("UranFuel", itemUranIngot);
+        addCompressorRecipe("uraniumOre", itemUranIngot);
+        addCompressorRecipe("crushedUraniumOre", itemUranIngot);
         OreDictionary.registerOre("ingotUranium", itemUranIngot);
         OreDictionary.registerOre("ingotIridium", ingotIridium);
         OreDictionary.registerOre("craftingSolarPanelHV", itemUHSP);
@@ -443,14 +468,20 @@ public class AdvancedSolarPanel {
         }
 
         if (!disableMolecularTransformerRecipe) {
-            GameRegistry.addRecipe(
-                itemMTCore,
-                new Object[] { "MXM", "M M", "MXM", 'M', itemIrradiantGlassPane, 'X',
-                    IC2Items.getItem("reactorReflectorThick") });
-            GameRegistry.addRecipe(
-                itemMolecularTransformer,
-                new Object[] { "MXM", "ABA", "MXM", 'M', IC2Items.getItem("advancedMachine"), 'X',
-                    IC2Items.getItem("evTransformer"), 'A', IC2Items.getItem("advancedCircuit"), 'B', itemMTCore });
+            ItemStack reflector = IC2Items.getItem("reactorReflectorThick");
+            if (reflector == null || reflector.getItem() == null) {
+                addLog("IC2 item 'reactorReflectorThick' was not found; MT Core recipe skipped.");
+            } else {
+                // Never pass IC2's cached stack into a recipe; the recipe path mutates its damage.
+                GameRegistry.addRecipe(
+                    itemMTCore,
+                    new Object[] { "MXM", "M M", "MXM", 'M', itemIrradiantGlassPane, 'X',
+                        new ItemStack(reflector.getItem(), 1, 1) });
+                GameRegistry.addRecipe(
+                    itemMolecularTransformer,
+                    new Object[] { "MXM", "ABA", "MXM", 'M', IC2Items.getItem("advancedMachine"), 'X',
+                        IC2Items.getItem("evTransformer"), 'A', IC2Items.getItem("advancedCircuit"), 'B', itemMTCore });
+            }
         }
 
         if (!disableQuantumSolarPanelRecipe) {

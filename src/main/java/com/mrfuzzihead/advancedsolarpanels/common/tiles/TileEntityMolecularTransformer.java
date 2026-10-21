@@ -19,7 +19,7 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.util.ForgeDirection;
 
-import com.mrfuzzihead.advancedsolarpanels.common.AdvancedSolarPanel;
+import com.mrfuzzihead.advancedsolarpanels.AdvancedSolarPanel;
 import com.mrfuzzihead.advancedsolarpanels.common.container.ContainerMolecularTransformer;
 import com.mrfuzzihead.advancedsolarpanels.network.IReceiveServerEvents;
 import com.mrfuzzihead.advancedsolarpanels.network.PacketChangeState;
@@ -38,8 +38,9 @@ public class TileEntityMolecularTransformer extends TileEntityBase
     implements IEnergyTile, IWrenchable, IInventory, IEnergySink, ISidedInventory, INetworkDataProvider,
     INetworkUpdateListener, INetworkTileEntityEventListener, IReceiveServerEvents {
 
+    private static final double MAX_ENERGY_BUFFER = 10_000_000.0D;
     private static final int[] slots_top = new int[] { 0 };
-    private static final int[] slots_bottom = new int[] { 1, 1 };
+    private static final int[] slots_bottom = new int[] { 1 };
     private static final int[] slots_sides = new int[] { 1 };
     public static Random randomizer = new Random();
     public int ticker;
@@ -51,7 +52,7 @@ public class TileEntityMolecularTransformer extends TileEntityBase
     public boolean waitOutputSlot;
     public ItemStack lastRecipeInput;
     public ItemStack lastRecipeOutput;
-    public int lastRecipeEnergyUsed;
+    public double lastRecipeEnergyUsed;
     public int lastRecipeEnergyPerOperation;
     public int lastRecipeNumber;
     private int machineTire;
@@ -65,7 +66,7 @@ public class TileEntityMolecularTransformer extends TileEntityBase
     private int energyTicker = 0;
     private int energyTickRate = 60;
     public short lastProgress;
-    public int energyBuffer;
+    public double energyBuffer;
     private boolean isActive;
     private boolean prevActiveState;
     public int inputEU;
@@ -123,6 +124,7 @@ public class TileEntityMolecularTransformer extends TileEntityBase
         }
 
         this.loaded = false;
+        this.initialized = false;
     }
 
     public void intialize() {
@@ -152,6 +154,7 @@ public class TileEntityMolecularTransformer extends TileEntityBase
             if (!this.doWork && this.workSlots[0] != null) {
                 if (this.canSmelt()) {
                     this.workSlots[0].stackSize = this.workSlots[0].stackSize - this.lastRecipeInput.stackSize;
+                    this.markDirty();
                     this.lastRecipeEnergyUsed = 0;
                     this.waitOutputSlot = false;
                     this.lastProgress = 0;
@@ -230,39 +233,42 @@ public class TileEntityMolecularTransformer extends TileEntityBase
         }
     }
 
-    public int gainFuel(int energyPacket) {
-        int energyLeft = energyPacket;
-        if (energyPacket >= 0) {
-            if (this.lastRecipeEnergyPerOperation - this.lastRecipeEnergyUsed > energyPacket) {
-                energyLeft = 0;
-                this.lastRecipeEnergyUsed += energyPacket;
-            } else {
-                energyLeft = energyPacket - (this.lastRecipeEnergyPerOperation - this.lastRecipeEnergyUsed);
-                this.lastRecipeEnergyUsed = this.lastRecipeEnergyPerOperation;
-                this.lastProgress = 100;
-                this.waitOutputSlot = true;
-                if (this.workSlots[1] != null) {
-                    if (this.isItemEqual(this.lastRecipeOutput, this.workSlots[1])) {
-                        if (this.workSlots[1].getMaxStackSize()
-                            >= this.workSlots[1].stackSize + this.lastRecipeOutput.stackSize) {
-                            this.workSlots[1].stackSize = this.workSlots[1].stackSize + this.lastRecipeOutput.stackSize;
-                            this.doWork = false;
-                            this.deactiveTicker = 0;
-                            this.deactiveTimer = true;
-                            super.markDirty();
-                            this.waitOutputSlot = false;
-                        } else if (this.isActive()) {
-                            this.setActive(false, true);
-                        }
+    public double gainFuel(double energyPacket) {
+        if (energyPacket < 0.0D) {
+            return 0.0D;
+        }
+
+        double energyLeft = energyPacket;
+        double remaining = (double) this.lastRecipeEnergyPerOperation - this.lastRecipeEnergyUsed;
+        if (remaining > energyPacket) {
+            this.lastRecipeEnergyUsed += energyPacket;
+            energyLeft = 0.0D;
+        } else {
+            energyLeft = energyPacket - Math.max(0.0D, remaining);
+            this.lastRecipeEnergyUsed = this.lastRecipeEnergyPerOperation;
+            this.lastProgress = 100;
+            this.waitOutputSlot = true;
+            if (this.workSlots[1] != null) {
+                if (this.isItemEqual(this.lastRecipeOutput, this.workSlots[1])) {
+                    if (this.workSlots[1].getMaxStackSize()
+                        >= this.workSlots[1].stackSize + this.lastRecipeOutput.stackSize) {
+                        this.workSlots[1].stackSize = this.workSlots[1].stackSize + this.lastRecipeOutput.stackSize;
+                        this.doWork = false;
+                        this.deactiveTicker = 0;
+                        this.deactiveTimer = true;
+                        super.markDirty();
+                        this.waitOutputSlot = false;
+                    } else if (this.isActive()) {
+                        this.setActive(false, true);
                     }
-                } else {
-                    this.workSlots[1] = this.lastRecipeOutput.copy();
-                    this.doWork = false;
-                    this.deactiveTicker = 0;
-                    this.deactiveTimer = true;
-                    this.waitOutputSlot = false;
-                    super.markDirty();
                 }
+            } else {
+                this.workSlots[1] = this.lastRecipeOutput.copy();
+                this.doWork = false;
+                this.deactiveTicker = 0;
+                this.deactiveTimer = true;
+                this.waitOutputSlot = false;
+                super.markDirty();
             }
         }
 
@@ -272,10 +278,15 @@ public class TileEntityMolecularTransformer extends TileEntityBase
 
     private void updateProgress() {
         if (this.doWork) {
-            float tmpProgress = (float) this.lastRecipeEnergyUsed / this.lastRecipeEnergyPerOperation * 100.0F;
-            this.lastProgress = (short) Math.round(tmpProgress);
-            if (this.lastRecipeEnergyUsed == this.lastRecipeEnergyPerOperation) {
+            if (this.lastRecipeEnergyPerOperation <= 0) {
                 this.lastProgress = 100;
+            } else {
+                double ratio = this.lastRecipeEnergyUsed / (double) this.lastRecipeEnergyPerOperation;
+                ratio = Math.max(0.0D, Math.min(1.0D, ratio));
+                this.lastProgress = (short) Math.round(ratio * 100.0D);
+                if (this.lastRecipeEnergyUsed >= this.lastRecipeEnergyPerOperation) {
+                    this.lastProgress = 100;
+                }
             }
         } else {
             this.lastProgress = 0;
@@ -309,9 +320,12 @@ public class TileEntityMolecularTransformer extends TileEntityBase
         this.lastY = nbttagcompound.getInteger("lastY");
         this.lastZ = nbttagcompound.getInteger("lastZ");
         this.doWork = nbttagcompound.getBoolean("doWork");
-        this.lastRecipeEnergyUsed = nbttagcompound.getInteger("lastRecipeEnergyUsed");
-        this.lastRecipeEnergyPerOperation = nbttagcompound.getInteger("lastRecipeEnergyPerOperation");
+        this.lastRecipeEnergyUsed = Math.max(0.0D, nbttagcompound.getDouble("lastRecipeEnergyUsed"));
+        this.lastRecipeEnergyPerOperation = Math.max(0, nbttagcompound.getInteger("lastRecipeEnergyPerOperation"));
+        this.lastRecipeEnergyUsed = Math.min(this.lastRecipeEnergyUsed, this.lastRecipeEnergyPerOperation);
         this.lastProgress = nbttagcompound.getShort("lastProgress");
+        this.energyBuffer = Math.max(0.0D, Math.min(MAX_ENERGY_BUFFER, nbttagcompound.getDouble("energyBuffer")));
+        this.waitOutputSlot = nbttagcompound.getBoolean("waitOutputSlot");
         NBTTagList nbttaglist_recipe = nbttagcompound.getTagList("Recipes", 10);
 
         for (int i = 0; i < nbttaglist_recipe.tagCount(); i++) {
@@ -334,6 +348,9 @@ public class TileEntityMolecularTransformer extends TileEntityBase
                 this.lastRecipeEnergyUsed = 0;
             } else {
                 this.lastRecipeNumber = i;
+                this.lastRecipeEnergyPerOperation = MTRecipeManager.transformerRecipes.get(i).energyPerOperation;
+                this.lastRecipeEnergyUsed = Math.min(this.lastRecipeEnergyUsed, this.lastRecipeEnergyPerOperation);
+                this.energyBuffer = Math.min(this.energyBuffer, MAX_ENERGY_BUFFER);
             }
         } else {
             this.lastRecipeNumber = 0;
@@ -374,8 +391,10 @@ public class TileEntityMolecularTransformer extends TileEntityBase
         nbttagcompound.setInteger("lastY", this.lastY);
         nbttagcompound.setInteger("lastZ", this.lastZ);
         nbttagcompound.setBoolean("doWork", this.doWork);
-        nbttagcompound.setInteger("lastRecipeEnergyUsed", this.lastRecipeEnergyUsed);
+        nbttagcompound.setDouble("lastRecipeEnergyUsed", this.lastRecipeEnergyUsed);
         nbttagcompound.setInteger("lastRecipeEnergyPerOperation", this.lastRecipeEnergyPerOperation);
+        nbttagcompound.setDouble("energyBuffer", this.energyBuffer);
+        nbttagcompound.setBoolean("waitOutputSlot", this.waitOutputSlot);
         nbttagcompound.setShort("lastProgress", this.lastProgress);
         nbttagcompound.setInteger("lastRecipeNumber", this.lastRecipeNumber);
         NBTTagCompound nbttagcompound_recipe = new NBTTagCompound();
@@ -438,7 +457,7 @@ public class TileEntityMolecularTransformer extends TileEntityBase
     }
 
     public boolean isUseableByPlayer(EntityPlayer entityplayer) {
-        return entityplayer.getDistance(this.xCoord + 0.5, this.yCoord + 0.5, this.zCoord + 0.5) <= 64.0;
+        return entityplayer.getDistanceSq(this.xCoord + 0.5, this.yCoord + 0.5, this.zCoord + 0.5) <= 64.0;
     }
 
     public int tickRate() {
@@ -510,6 +529,7 @@ public class TileEntityMolecularTransformer extends TileEntityBase
         if (itemstack != null && itemstack.stackSize > this.getInventoryStackLimit()) {
             itemstack.stackSize = this.getInventoryStackLimit();
         }
+        this.markDirty();
     }
 
     public int getInventoryStackLimit() {
@@ -539,7 +559,6 @@ public class TileEntityMolecularTransformer extends TileEntityBase
 
     @Override
     public void onServerEvent(int event, NBTTagCompound nbtData) {
-        Thread.getAllStackTraces();
         switch (event) {
             case 0:
                 this.setActive(false, false);
@@ -557,7 +576,6 @@ public class TileEntityMolecularTransformer extends TileEntityBase
     public Packet getDescriptionPacket() {
         NBTTagCompound nbttagcompound = new NBTTagCompound();
         nbttagcompound.setBoolean("active", this.isActive);
-        this.writeToNBT(nbttagcompound);
         return new S35PacketUpdateTileEntity(this.xCoord, this.yCoord, this.zCoord, 3, nbttagcompound);
     }
 
@@ -566,28 +584,33 @@ public class TileEntityMolecularTransformer extends TileEntityBase
     }
 
     public double getDemandedEnergy() {
-        if (!this.doWork) {
+        if (!this.doWork || this.waitOutputSlot) {
             this.inputEU = 0;
-            return 0.0;
-        } else {
-            return this.lastRecipeEnergyPerOperation - this.lastRecipeEnergyUsed >= 0
-                ? this.lastRecipeEnergyPerOperation - this.lastRecipeEnergyUsed
-                : 0.0;
+            return 0.0D;
         }
+        double remaining = (double) this.lastRecipeEnergyPerOperation - this.lastRecipeEnergyUsed - this.energyBuffer;
+        return Math.max(0.0D, remaining);
     }
 
     public double injectEnergy(ForgeDirection directionFrom, double amount, double voltage) {
-        this.inputEU = (int) amount;
-        if (!this.doWork) {
+        this.inputEU = (int) Math.min(Integer.MAX_VALUE, Math.max(0.0D, amount));
+        if (!this.doWork || this.waitOutputSlot || amount <= 0.0D) {
             return amount;
-        } else if (this.lastRecipeEnergyPerOperation - this.lastRecipeEnergyUsed >= amount) {
-            this.energyBuffer = (int) (this.energyBuffer + amount);
-            return 0.0;
-        } else {
-            this.energyBuffer = (int) (this.energyBuffer
-                + (amount - (this.lastRecipeEnergyPerOperation - this.lastRecipeEnergyUsed)));
-            return amount - (this.lastRecipeEnergyPerOperation - this.lastRecipeEnergyUsed);
         }
+
+        double remaining = (double) this.lastRecipeEnergyPerOperation - this.lastRecipeEnergyUsed;
+        if (remaining <= 0.0D) {
+            return amount;
+        }
+
+        double accepted = Math.min(amount, remaining - this.energyBuffer);
+        accepted = Math.min(accepted, MAX_ENERGY_BUFFER - this.energyBuffer);
+        if (accepted <= 0.0D) {
+            return amount;
+        }
+
+        this.energyBuffer += accepted;
+        return amount - accepted;
     }
 
     public int getSinkTier() {
@@ -607,7 +630,7 @@ public class TileEntityMolecularTransformer extends TileEntityBase
     }
 
     public boolean canExtractItem(int index, ItemStack itemStack, int side) {
-        return true;
+        return index == 1;
     }
 
     public String getInventoryName() {

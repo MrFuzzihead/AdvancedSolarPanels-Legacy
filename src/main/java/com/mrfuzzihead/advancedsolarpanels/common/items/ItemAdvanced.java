@@ -9,16 +9,15 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.IIcon;
 
-import com.mrfuzzihead.advancedsolarpanels.common.AdvancedSolarPanel;
+import com.mrfuzzihead.advancedsolarpanels.AdvancedSolarPanel;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
 public class ItemAdvanced extends Item {
 
-    private List<String> itemNames = new ArrayList<>();
-    private IIcon[] IIconsList = new IIcon[14];
-    private int itemsCount = 13;
+    private final List<String> itemNames = new ArrayList<>();
+    private final IIcon[] IIconsList = new IIcon[14];
 
     public ItemAdvanced() {
         this.setHasSubtypes(true);
@@ -27,12 +26,16 @@ public class ItemAdvanced extends Item {
         this.addItemsNames();
     }
 
+    private int clampMetadata(int metadata) {
+        return metadata >= 0 && metadata < this.itemNames.size() ? metadata : 0;
+    }
+
     public String getUnlocalizedName(ItemStack stack) {
-        return this.itemNames.get(stack.getItemDamage());
+        return this.itemNames.get(clampMetadata(stack.getItemDamage()));
     }
 
     public IIcon getIconFromDamage(int par1) {
-        return this.IIconsList[par1];
+        return this.IIconsList[clampMetadata(par1)];
     }
 
     public void addItemsNames() {
@@ -71,15 +74,8 @@ public class ItemAdvanced extends Item {
     }
 
     public void getSubItems(Item item, CreativeTabs tabs, List itemList) {
-        for (int meta = 0; meta <= this.itemNames.size() - 1; meta++) {
-            ItemStack stack = new ItemStack(this, 1, meta);
-            itemList.add(stack);
-        }
-    }
-
-    public void getSubItems(int par1, CreativeTabs par2CreativeTabs, List par3List) {
-        for (int i = 0; i <= this.IIconsList.length - 1; i++) {
-            par3List.add(new ItemStack(this, 1, i));
+        for (int meta = 0; meta < this.itemNames.size(); meta++) {
+            itemList.add(new ItemStack(this, 1, meta));
         }
     }
 }

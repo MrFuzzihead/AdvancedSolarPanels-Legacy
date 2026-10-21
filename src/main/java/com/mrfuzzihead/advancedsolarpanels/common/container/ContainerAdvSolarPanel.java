@@ -8,6 +8,7 @@ import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
 
 import com.mrfuzzihead.advancedsolarpanels.common.tiles.TileEntitySolarPanel;
+import com.mrfuzzihead.advancedsolarpanels.utils.SlotElectricItem;
 
 public class ContainerAdvSolarPanel extends Container {
 
@@ -22,7 +23,7 @@ public class ContainerAdvSolarPanel extends Container {
         this.tileentity = tileentitysolarpanel;
 
         for (int j = 0; j < 4; j++) {
-            this.addSlotToContainer(new Slot(this.tileentity, j, 17 + j * 18, 59));
+            this.addSlotToContainer(new SlotElectricItem(this.tileentity, j, 17 + j * 18, 59));
         }
 
         for (int i = 0; i < 3; i++) {

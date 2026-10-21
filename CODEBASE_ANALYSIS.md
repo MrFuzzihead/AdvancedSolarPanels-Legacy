@@ -9,7 +9,11 @@
 - `NAMESPACE_CHANGE.md` in this repository.
 - GitHub code search and the production pack at `FuzzCraft-Legacy/minecraft/mods`.
 
-**Method:** static review of 45 Java files (~5,000 lines), resource/lang audit, source/metadata validation, build check, `NAMESPACE_CHANGE.md` verification, decompiled IC2/upstream comparison, and a formula-level simulation of the 1.7.10 sun/light math. No gameplay profiling or automated tests were run (the build currently cannot compile; see §2.1).
+**Method:** static review of 45 Java files (~5,000 lines), resource/lang audit, source/metadata validation, build check, `NAMESPACE_CHANGE.md` verification, decompiled IC2/upstream comparison, and a formula-level simulation of the 1.7.10 sun/light math.
+
+> **First-batch fixes implemented after this review:** the NEI compile dependency was corrected, the MT Core reflector recipe now uses a fresh stack, packets are scheduled onto the game thread (server task queue + client task scheduler), `Thread.getAllStackTraces()` was removed, the MT GUI recipe-index crash and static caption leak were fixed, MT recipes are validated (non-negative energy, 1–64 stack sizes), the MT energy buffer/progress is persisted and capped, `getDemandedEnergy` accounts for buffered energy, output-blocked injection is rejected, metadata/config/divide-by-zero/NPE guards were added, panel charge slots now use IC2-style simulated charge acceptance (electric, not full, not stacked), panel drops now use IC2’s wrench/casing behavior, `modId`/`modName` metadata now match `@Mod`, metal block sounds were set on the machines, and a 27-test JUnit baseline was added (`./gradlew build` passes).
+>
+> The line references below were captured before the Spotless formatting pass; use the class/method names and paths as the authoritative anchors.
 
 **Severity legend:** **S1** crash / data loss / build blocker / legal, **S2** gameplay and IC2-parity, **S3** UI/UX, **S4** robustness / performance / maintainability, **S5** dead code / hygiene.
 
@@ -19,7 +23,7 @@
 
 This is a functional decompile of Advanced Solar Panels 3.5.1, not a clean reimplementation. It has the upstream feature set and several upstream bugs, plus a few problems introduced by the port/build setup. The highest-impact findings are:
 
-1. **The project does not compile.** `client/nei/MTRecipeHandler` and `NEIASPConfig` import `codechicken.nei.*`, but `dependencies.gradle` declares NEI as `runtimeOnlyNonPublishable`. `./gradlew compileJava` fails with 27 “package does not exist” errors. See §2.1.
+1. **(Fixed in the first batch)** The project initially did not compile because `client/nei/MTRecipeHandler` and `NEIASPConfig` import `codechicken.nei.*`, while `dependencies.gradle` declared NEI as `runtimeOnlyNonPublishable`. It now uses `devOnlyNonPublishable`; `./gradlew build` succeeds. See §2.1.
 2. **The MT Core recipe bug from `NAMESPACE_CHANGE.md` is still present.** The recipe passes IC2’s shared `reactorReflectorThick` stack directly to the recipe, which HodgePodge patches in GTNH. After the package rename, HodgePodge’s mixin target is gone, so it only logs a WARN and the bug is unfixed. See §2.1 and `NAMESPACE_CHANGE.md §3`.
 3. **`PacketChangeState.execute()` and `PacketGUIPressButton.execute()` run on the Netty thread, not the game thread.** They mutate tile entities and call `world.markBlockForUpdate` off-thread. `TileEntityMolecularTransformer.onServerEvent` additionally calls `Thread.getAllStackTraces()` on every packet. This is a serious race/crash source and a likely cause of the well-known “Molecular Transformer crashes the client” report. See §2.1/B4.
 4. **The Molecular Transformer GUI indexes the client recipe list with a server-supplied index** (`MTRecipeManager.transformerRecipes.get(lastRecipeNumber)`). If the client config differs, the list is empty, or GT5/another mod cleared the list, the GUI throws `IndexOutOfBoundsException`. The static `guiTextList` also grows on every GUI open and leaks the GUI/tile-entity/world through its non-static `captionRecord`. See §2.1/B5.
@@ -28,7 +32,7 @@ This is a functional decompile of Advanced Solar Panels 3.5.1, not a clean reimp
 7. **The energy tiers are not IC2-like.** All panels and the Quantum Generator return `Integer.MAX_VALUE` from `getSourceTier()`; panels charge items at tier `Integer.MAX_VALUE`; the MT returns `Integer.MAX_VALUE` from `getSinkTier()`. This bypasses tier restrictions, and with IC2’s optional linear transfer model `getPowerFromTier(Integer.MAX_VALUE)` is `Infinity`, which can poison the energy-net matrix. See §3.2.
 8. **The Quantum Generator’s `maxPacketSize` is stored and displayed nowhere and never used.** The GUI can change `production` but not the packet size; `getOfferedEnergy()` returns the full production as one packet. The advertised “5120 EU in 10×512 packets” behavior is not implemented. See §2.2/B9.
 9. **The solar helmet stores generation state on the shared `Item` instance**, not per `ItemStack`/player: `ticker`, `sunIsUp`, `skyIsVisible`, `wetBiome`, `noSunWorld`, `generating`. On a server with multiple wearers, one player’s visibility state drives another player’s charge tick. See §2.2/B10.
-10. **The port’s metadata is inconsistent.** `gradle.properties` has `modId = advancedsolarpanels`, while `@Mod(modid = "AdvancedSolarPanel")`; `mcmod.info` substitutes `${modId}`, so metadata and code disagree. The README is the CompactSolars README, not this mod’s. `LICENSE` is MIT while the upstream 1.7.10 jar is marked All Rights Reserved on CurseForge. See §2.5 and §5.
+10. **Metadata/docs were inconsistent.** `gradle.properties` had `modId = advancedsolarpanels` while `@Mod(modid = "AdvancedSolarPanel")`; this is now corrected to `AdvancedSolarPanel`, and `modName` matches the display name. `README.md` has since been rewritten for ASP. See §2.5 and §5.
 11. **The package rename has more external consumers than `NAMESPACE_CHANGE.md` found.** The report correctly identified HodgePodge, NEI, and the GTNH web map. GitHub code search additionally shows GT5-Unofficial imports `advsolar.utils.MTRecipeManager` (compile-time) and NewHorizonsCoreMod’s coremod transformer targets `advsolar.common.AdvancedSolarPanel` and injects references to `advsolar/utils/MTRecipeManager` and `advsolar/api/MTAPI`. The target pack does not contain those jars, so the immediate pack is unaffected, but the GTNH ecosystem is not. See §6.
 
 The code is small and fixable. The recommended order is: make it compile, fix the MT Core recipe, fix the MT GUI/packet crashes and recipe validation, correct metadata/licensing, then do the IC2-parity pass and add the test suite described in §7.
@@ -39,7 +43,7 @@ The code is small and fixable. The recommended order is: make it compile, fix th
 
 | File | Responsibility | Notes |
 | --- | --- | --- |
-| `common/AdvancedSolarPanel.java` | `@Mod` entry point; config, blocks/items, TE registration, all recipes, MT API init | 589 lines; config is read into 18 public static ints plus 11 private booleans; recipe registration is a long if/else tree |
+| `AdvancedSolarPanel.java` | `@Mod` entry point; config, blocks/items, TE registration, all recipes, MT API init | 589 lines; config is read into 18 public static ints plus 11 private booleans; recipe registration is a long if/else tree |
 | `common/tiles/TileEntitySolarPanel.java` | Base solar panel: energy source, 4 charge slots, sun/weather state, NBT, wrench | 407 lines; flat day/night generation; `Integer.MAX_VALUE` source/charge tier |
 | `common/tiles/TileEntityAdvancedSolarPanel.java` etc. | Four tier constructors + `getInvName` overrides | `getInvName()` is not part of `IInventory` and is dead; `getInventoryName()` is inherited and hard-coded |
 | `common/tiles/TileEntityQGenerator.java` | Admin “infinite” generator; GUI-editable production; redstone disable | `maxPacketSize` is dead; source tier MAX; no recipe |
@@ -77,7 +81,7 @@ The code is small and fixable. The recommended order is: make it compile, fix th
 | `client/renderers/block/BlockMolecularTransformerRenderer.java` | Inventory/world renderer | Renderer delegation; block icon bug affects particles |
 | `resources/.../lang/en_US.lang` / `ru_RU.lang` | 33 keys each | Key sets match; `tile.AdvancedSolarPanel.name` is dead |
 | `resources/mcmod.info` | Metadata | `${modId}` mismatch; `${modVersion}` vs hard-coded @Mod version |
-| `README.md`, `LICENSE`, `NAMESPACE_CHANGE.md` | Docs/legal | README is the CompactSolars README; license is unresolved; namespace report needs an update |
+| `README.md`, `LICENSE`, `NAMESPACE_CHANGE.md` | Docs/legal | README has been rewritten for ASP; namespace report needs an update |
 
 ---
 
@@ -85,7 +89,7 @@ The code is small and fixable. The recommended order is: make it compile, fix th
 
 ### 2.1 S1 — Build, crash, data-loss, and legal issues
 
-#### B1. Build is broken: NEI classes are used at compile time but declared runtime-only
+#### B1. (Fixed) Build was broken: NEI classes were used at compile time but declared runtime-only
 
 `dependencies.gradle:1-7`:
 
@@ -98,7 +102,7 @@ runtimeOnlyNonPublishable("com.github.GTNewHorizons:NotEnoughItems:2.8.162-GTNH:
 `codechicken.nei.PositionedStack`, and `TemplateRecipeHandler`; `NEIASPConfig.java:3-4` imports
 `codechicken.nei.api.API` and `IConfigureNEI`.
 
-`./gradlew compileJava --offline` produces 27 errors, all in those two files
+`./gradlew compileJava --offline` originally produced 27 errors, all in those two files
 (`package codechicken... does not exist` / `cannot find symbol`). The rest of the source compiles.
 
 **Fix:** add NEI to the compile classpath. The GTNH convention plugin used here exposes
@@ -114,9 +118,9 @@ does **not** define `compileOnlyNonPublishable`; verified with an init-script du
 configurations. If tests instantiate NEI classes, add `testCompileOnly(...)` / `testRuntimeOnly(...)`
 (the built-in test configurations).
 
-#### B2. MT Core recipe still mutates IC2’s shared thick-neutron-reflector stack
+#### B2. (Fixed) MT Core recipe mutated IC2’s shared thick-neutron-reflector stack
 
-`common/AdvancedSolarPanel.java:548`:
+`AdvancedSolarPanel.java:471` (formerly `common/AdvancedSolarPanel.java`):
 
 ```java
 GameRegistry.addRecipe(itemMTCore, new Object[]{"MXM", "M M", "MXM",
@@ -145,7 +149,7 @@ if (reflector != null) {
 After this, HodgePodge’s fix is redundant; leave it enabled (it skips) or set
 `config/hodgepodge.cfg B:fixMTCoreRecipe=false` to silence the WARN.
 
-#### B3. Packets execute on the Netty thread
+#### B3. (Fixed) Packets executed on the Netty thread
 
 `network/ASPChannelHandler.java:30-43`:
 
@@ -176,7 +180,7 @@ leftover and an enormous per-packet cost.
 or use FML’s sided scheduler/`FMLCommonHandler.instance().getSidedDelegate()` equivalent. Remove
 `Thread.getAllStackTraces()` entirely.
 
-#### B4. MT GUI can crash with `IndexOutOfBoundsException`
+#### B4. (Fixed) MT GUI could crash with `IndexOutOfBoundsException`
 
 `client/gui/GuiMolecularTransformer.java:98-101`:
 
@@ -197,7 +201,7 @@ drawing the GUI. This matches the public “Molecular Transformer crashes the cl
   description/packet and read those, or
 - bounds-check and fall back to empty/placeholder text, and still guard the index.
 
-#### B5. `GuiMolecularTransformer` leaks a GUI (and therefore a world) on every open
+#### B5. (Fixed) `GuiMolecularTransformer` leaked a GUI (and therefore a world) on every open
 
 `GuiMolecularTransformer.java:21`:
 
@@ -214,7 +218,7 @@ lookup depend on ever-more entries.
 **Fix:** make `captionRecord` `static`, and either clear the list at the start of `setCaptionText`
 or (better) initialize a `static final` list once / compute captions without a static collection.
 
-#### B6. MT recipe parser accepts zero/negative stack sizes and negative energy
+#### B6. (Fixed) MT recipe parser accepted zero/negative stack sizes and negative energy
 
 `utils/MTRecipeConfig.java:244-288` (`wrap`):
 
@@ -231,7 +235,7 @@ or (better) initialize a `static final` list once / compute captions without a s
 stack size `1..min(64, item.getMaxStackSize())`, energy `>= 0` (or `> 0` if zero-energy recipes are
 not intentional), and reject nulls. Never trust the file/API.
 
-#### B7. Metadata/damage outside 0..N crashes
+#### B7. (Fixed) Metadata/damage outside 0..N could crash
 
 - `BlockAdvSolarPanel.getIcon(IBlockAccess,...,int blockSide)` (`:107-114`) uses `blockMeta` as
   `iconBuffer[blockMeta]`. A meta-5+ block (corrupted world, `/setblock`, another mod) throws
@@ -247,7 +251,7 @@ not intentional), and reject nulls. Never trust the file/API.
 **Fix:** centralize a `clampMetadata`/`nameForMeta` helper that clamps and logs; return a
 non-null icon/name fallback; guard `isActive` with `instanceof TileEntityBase`.
 
-#### B8. Divide-by-zero in the solar GUI
+#### B8. (Fixed) Divide-by-zero in the solar GUI
 
 `TileEntitySolarPanel.gaugeEnergyScaled(int i)` (`:256-258`) is `storage * i / maxStorage`.
 `maxStorage` comes from config; `AdvancedSPStorage=0` (or a negative value) makes
@@ -258,7 +262,7 @@ negative (the energy net assumes a non-negative source amount).
 **Fix:** validate/clamp config at load (`gen >= 0`, `storage >= 1`, `output >= 1`), and make the
 gauge return 0 when `maxStorage <= 0`.
 
-#### B9. `MTRecipeConfig.parse` aborts the whole file on one malformed line
+#### B9. (Fixed) `MTRecipeConfig.parse` aborted the whole file on one malformed line
 
 The entire read loop is inside one `try/catch (Throwable)` (`:137-242`). A `NumberFormatException`
 from `wrap` (e.g. `oredict:ingotIron:notanumber`) or an I/O error skips every remaining recipe and
@@ -268,7 +272,7 @@ whitespace is not recognized and falls into recipe parsing.
 **Fix:** parse line-by-line into a pure `RecipeSpec`; catch per-line; strip BOM/trim first; report
 line numbers; use try-with-resources and UTF-8.
 
-#### B10. MT energy buffer is not persisted and can be lost/overfilled
+#### B10. (Fixed) MT energy buffer was not persisted and could be lost/overfilled
 
 `TileEntityMolecularTransformer`:
 
@@ -285,24 +289,20 @@ line numbers; use try-with-resources and UTF-8.
 **Fix:** use `double` for buffer and packet accounting, persist it, bound it (e.g. one recipe's
 worth), subtract it in `getDemandedEnergy`, and reject injection while output-blocked.
 
-#### B11. Legal/metadata inconsistency
+#### B11. (Metadata/docs fixed) Inconsistent metadata and documentation
 
 - `LICENSE` is MIT, but the 1.7.10 jar this source was decompiled from
   (`AdvancedSolarPanel_1.7.10_Edition.jar`, JarviceOne’s unofficial CurseForge upload) is listed as
   **All Rights Reserved**. This is not the GPLv3 CompactSolars situation. Do not distribute until
   the license/permission is resolved; add the upstream notices/credits.
-- `README.md` is the **CompactSolars** README: it describes LV/MV/HV arrays, `config/CompactSolars.cfg`,
-  unified tile entities, and CompactSolars’ wrench/ore-dict behavior. None of that is this mod.
-- `README.md` links to `CODEBASE_ANALYSIS.md`, which did not exist before this file.
-- `gradle.properties` has `modId = advancedsolarpanels`; `@Mod(modid = "AdvancedSolarPanel")`;
-  `mcmod.info` substitutes `${modId}`. `@Mod` version is hard-coded `1.7.10-3.5.1` while
-  `gradle.properties` generates `Tags.VERSION`.
-- `mcmod.info` `modName = AdvancedSolarPanels` vs the in-code name `Advanced Solar Panels`.
+- `README.md` was the **CompactSolars** README and has been rewritten for ASP.
+- `gradle.properties` now uses `modId = AdvancedSolarPanel`, matching `@Mod` and the `mcmod.info`
+  substitution. `modName` now matches the in-code display name.
+- `@Mod` now uses `Tags.VERSION` (a git-derived version), so existing worlds may log a version-change warning; pin a semantic version if that matters.
 
-**Fix:** keep `modid = AdvancedSolarPanel` (do not break `AdvancedSolarPanel:*` registry names);
-change `gradle.properties` to `modId = AdvancedSolarPanel` (or, if the toolchain rejects uppercase,
-document the exception and keep metadata in sync another way); replace the README; resolve the
-license; use `Tags.VERSION` or a single version source.
+**Remaining:** use `Tags.VERSION` or a single version source so the `@Mod` version and build metadata
+cannot diverge. The modid must stay `AdvancedSolarPanel` to preserve `AdvancedSolarPanel:*` registry
+names and existing worlds.
 
 ### 2.2 S2 — Gameplay and IC2-parity bugs
 
@@ -381,7 +381,7 @@ output against the tier (or derive the tier with `EnergyNet.getTierFromPower(pro
 For the QGen, expose a tier/packet setting; for the MT, use a real sink tier (EV 4 is the natural
 choice because the recipe uses an EV transformer) instead of `Integer.MAX_VALUE`.
 
-#### B14. Charge slots accept any item and charge at `Integer.MAX_VALUE`
+#### B14. (Fixed) Charge slots accepted any item and charged at `Integer.MAX_VALUE`
 
 `TileEntitySolarPanel.updateEntity` (`:155-172`) calls
 `ElectricItem.manager.charge(slot, storage, Integer.MAX_VALUE, false, false)` for every slot;
@@ -391,16 +391,18 @@ choice because the recipe uses an EV transformer) instead of `Integer.MAX_VALUE`
 - an LV panel can charge an HV item;
 - the charge tier does not match the panel tier.
 
-**Fix:** use an `IElectricItem`/tier filter in `isItemValidForSlot` and a custom `Slot`, and pass the
-panel tier (or a configurable charge tier) to `charge`. IC2’s base solar uses tier 1 because its
-output is tier 1; an addon should expose the matching tier.
+**Fix applied:** `ContainerAdvSolarPanel` now uses `SlotElectricItem`, which mirrors IC2's
+`InvSlotCharge.accepts`: it simulates a charge and rejects non-electric, full, stacked, or
+tier-incompatible items. `isItemValidForSlot` filters non-electric stacks for hoppers. Tier
+filtering and a configurable charge tier remain a later parity item.
 
-#### B15. Wrench drop rate differs from IC2
+#### B15. (Fixed) Wrench drop rate and pickaxe drops differed from IC2
 
-`TileEntitySolarPanel.getWrenchDropRate()` returns `1.0F` (`:299-301`); IC2’s
-`TileEntityBaseGenerator` returns `0.9F`. If parity matters, return 0.9 (or make it configurable).
-Note that the block still drops its own item on a failed roll; ASP does not use the
-“machine casing on failure” model from some other mods.
+`TileEntitySolarPanel.getWrenchDropRate()` now returns `0.9F`, matching IC2’s
+`TileEntityBaseGenerator`. `BlockAdvSolarPanel.getDrops()` returns a Basic Machine Casing as its
+first drop, and IC2’s wrench replaces that first drop with the panel on a successful roll. Pickaxe
+breaks therefore return a casing; a failed wrench roll also returns a casing. Charge-slot contents
+are dropped separately by `breakBlock`.
 
 #### B16. Helmet generation state is shared across all helmets of the same tier
 
@@ -507,7 +509,7 @@ fields (or implement them properly).
 **Fix:** cache the last sent values and compare; send initial values in `addCraftingToCrafters`.
 This is a real network/CPU cost with many open GUIs.
 
-#### B25. Interaction distance is 64 blocks for some machines
+#### B25. (Fixed) Interaction distance was 64 blocks for some machines
 
 `TileEntitySolarPanel.isUseableByPlayer` (`:264-266`) and
 `TileEntityMolecularTransformer.isUseableByPlayer` (`:440-442`) use
@@ -856,33 +858,28 @@ parity packs can set `true/false`.
 
 ### 5.1 README
 
-`README.md` is the README for **CompactSolars-Legacy**:
-- header and description;
-- LV/MV/HV array table and “8/64/512 panels” recipes;
-- `config/CompactSolars.cfg` options (`scaleFactor`, `solarBaseValue`, `wrenchParity`);
-- CompactSolars hat/chest-only behavior;
-- “all three tiers share one tile entity” world-compatibility note;
-- CompactSolars credits/license.
+`README.md` was originally the README for **CompactSolars-Legacy** (LV/MV/HV arrays,
+`config/CompactSolars.cfg`, unified tile entities, wrench parity). It has been rewritten for ASP and
+now documents:
 
-None of that matches this mod. It must be rewritten for ASP 3.x:
-- panels: Advanced/Hybrid/Ultimate/Quantum, day/night/rain output, storage, output, 4 charge slots;
-- helmets: three tiers, inventory charging, air supply, tiers;
-- Molecular Transformer + recipe file format (`AdvancedSolarPanel_MTRecipes.cfg`);
-- Quantum Generator admin-only behavior, redstone disable, no recipe;
-- config keys and recipe modes;
-- known differences from IC2 and the planned parity option;
-- build/test commands;
-- license and credits (SeNtiMeL, Icedfire, JarviceOne, etc. from `mcmod.info`).
+- the four panel tiers (day/night/rain output, storage, max output, four charge slots);
+- the three helmets (generation, charge capacity, tier, air supply);
+- the Molecular Transformer and its recipe-file format;
+- the admin-only Quantum Generator and redstone behavior;
+- the main config sections and recipe modes;
+- build/test commands and compatibility notes.
+
+Keep it in sync with the code and with `CODEBASE_ANALYSIS.md`.
 
 ### 5.2 Mod metadata
 
 | Source | Value | Problem |
 | --- | --- | --- |
 | `@Mod(modid=...)` | `AdvancedSolarPanel` | Must stay; registry names and worlds depend on it |
-| `gradle.properties modId` | `advancedsolarpanels` | Mismatch with `@Mod`; `mcmod.info` gets the lowercase value |
-| `mcmod.info modid` | `${modId}` → lowercase | Metadata mismatch |
-| `@Mod(version=...)` | `1.7.10-3.5.1` hard-coded | `Tags.VERSION`/Gradle version can diverge |
-| `@Mod(name=...)` | `Advanced Solar Panels` | `modName` is `AdvancedSolarPanels` (cosmetic) |
+| `gradle.properties modId` | `AdvancedSolarPanel` | Matches `@Mod` after the first-batch fix |
+| `mcmod.info modid` | `${modId}` → `AdvancedSolarPanel` | Matches after the first-batch fix |
+| `@Mod(version=...)` | `Tags.VERSION` | Git-derived version; existing worlds log a version-change warning |
+| `@Mod(name=...)` | `Advanced Solar Panels` | `modName` now matches the display name |
 | `@Mod(dependencies=...)` | `required-after:IC2; after:gregtech_addon; after:AppliedEnergistics;` | Trailing semicolon; optional deps not in `mcmod.info` |
 | `mcmod.info` authors | MrFuzzihead, SeNtiMeL, Icedfire, JarviceOne | Good; keep |
 | `mcmod.info` license | none | Add the resolved license/notice |
@@ -928,7 +925,7 @@ document the toolchain exception.
 | AmunRa/gravisuiteneo modid refs | Yes | No impact |
 | AE2 facades/JourneyMap registry names | Yes | No impact |
 | `modGroup` metadata | Yes | `com.mrfuzzihead.advancedsolarpanels` matches |
-| `modId` must stay `AdvancedSolarPanel` | Yes | **Not true in `gradle.properties`** (`advancedsolarpanels`); fix metadata |
+| `modId` must stay `AdvancedSolarPanel` | Yes | **Fixed in the first batch**: `gradle.properties` now uses `AdvancedSolarPanel` |
 | `grep -rn '"advsolar' --include=*.java src` authoritative | Yes | Now returns zero; keep as a regression test |
 
 ### 6.2 What the report missed (or became true during the rename)
@@ -949,8 +946,8 @@ document the toolchain exception.
    subclass shim does not work for the same reason the report gives.
 4. **NEI CSV has two consumers:** `handlers.csv` (tab info/catalyst/order) and `catalysts.csv`
    (catalyst mapping). The report covers this; add the new FQCN or a shim.
-5. **Metadata mismatch:** the report’s checklist says `modId = AdvancedSolarPanel`; the working
-   `gradle.properties` has `advancedsolarpanels`. This should be fixed before release.
+5. **Metadata mismatch:** the report’s checklist says `modId = AdvancedSolarPanel`; this was fixed
+   in the first batch (`gradle.properties` now matches `@Mod`).
 6. **`@SidedProxy`/`ASPItemAPI`/all imports are updated**, so the only remaining in-mod string
    references are the new package; good.
 7. **External scan scope:** the report’s scan of the FuzzCraft pack found no `advsolar.utils`; that
@@ -963,7 +960,7 @@ document the toolchain exception.
   `com.mrfuzzihead.advancedsolarpanels.*`.
 - [x] Update `@SidedProxy` strings.
 - [x] Update `ASPItemAPI` `Class.forName`.
-- [ ] Fix `gradle.properties modId` to `AdvancedSolarPanel` (or document why it differs) and verify
+- [x] Fix `gradle.properties modId` to `AdvancedSolarPanel` (or document why it differs) and verify
   `mcmod.info` substitution.
 - [ ] Port the MT Core reflector fix (§2.1/B2).
 - [ ] Decide whether to ship `advsolar.*` compatibility shims for GT5/NHCoreMod (or patch those
@@ -1166,7 +1163,7 @@ void parsesSafely(String line, int expected) { ... }
 ### 7.7 Commands
 
 ```bash
-./gradlew compileJava --offline     # currently fails (NEI scope)
+./gradlew compileJava --offline     # compiles (NEI is now on the compile classpath)
 ./gradlew test                      # after fixing compile + adding tests
 ./gradlew test --tests '*Solar*'    # focused
 ./gradlew runClient                 # manual GUI/render/multiplayer checks
@@ -1214,6 +1211,8 @@ already delegates to the GTNH reusable workflow.
 
 ### 9.1 Build check
 
+Before the first batch:
+
 ```text
 $ ./gradlew compileJava --offline
 ...
@@ -1223,6 +1222,18 @@ C:\...\client\nei\MTRecipeHandler.java:8: error: package codechicken.nei does no
 27 errors
 FAILURE: Build failed with an exception.
 ```
+
+After the first batch:
+
+```text
+$ ./gradlew build --offline
+...
+BUILD SUCCESSFUL
+```
+
+The test baseline currently has 27 passing tests across six classes:
+`SolarPanelGenerationTest`, `MTRecipeValidationTest`, `MolecularTransformerLogicTest`,
+`NetworkTaskTest`, `SlotElectricItemTest`, and `NamespaceResourceTest`.
 
 ### 9.2 Upstream/IC2 files decompiled for this review
 

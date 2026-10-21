@@ -4,6 +4,7 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.World;
 
+import com.mrfuzzihead.advancedsolarpanels.AdvancedSolarPanel;
 import com.mrfuzzihead.advancedsolarpanels.api.MTAPI;
 import com.mrfuzzihead.advancedsolarpanels.client.gui.GuiAdvSolarPanel;
 import com.mrfuzzihead.advancedsolarpanels.client.gui.GuiMolecularTransformer;
@@ -11,7 +12,6 @@ import com.mrfuzzihead.advancedsolarpanels.client.gui.GuiQGenerator;
 import com.mrfuzzihead.advancedsolarpanels.client.renderers.block.BlockMolecularTransformerRenderer;
 import com.mrfuzzihead.advancedsolarpanels.client.renderers.tile.TileMolecularTransformerRenderer;
 import com.mrfuzzihead.advancedsolarpanels.common.ASPServerProxy;
-import com.mrfuzzihead.advancedsolarpanels.common.AdvancedSolarPanel;
 import com.mrfuzzihead.advancedsolarpanels.common.tiles.TileEntityMolecularTransformer;
 import com.mrfuzzihead.advancedsolarpanels.common.tiles.TileEntityQGenerator;
 import com.mrfuzzihead.advancedsolarpanels.common.tiles.TileEntitySolarPanel;

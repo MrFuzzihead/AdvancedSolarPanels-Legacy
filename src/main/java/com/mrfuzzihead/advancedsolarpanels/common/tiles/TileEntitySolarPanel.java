@@ -94,7 +94,7 @@ public class TileEntitySolarPanel extends TileEntityBase
     }
 
     public void onLoaded() {
-        if (!this.worldObj.isRemote) {
+        if (!this.worldObj.isRemote && !this.addedToEnergyNet) {
             MinecraftForge.EVENT_BUS.post(new EnergyTileLoadEvent(this));
             this.addedToEnergyNet = true;
         }
@@ -117,6 +117,7 @@ public class TileEntitySolarPanel extends TileEntityBase
         }
 
         this.loaded = false;
+        this.initialized = false;
     }
 
     public void intialize() {
@@ -148,11 +149,8 @@ public class TileEntitySolarPanel extends TileEntityBase
 
             this.gainFuel();
             if (this.generating > 0) {
-                if (this.storage + this.generating <= this.maxStorage) {
-                    this.storage = this.storage + this.generating;
-                } else {
-                    this.storage = this.maxStorage;
-                }
+                long newStorage = (long) this.storage + this.generating;
+                this.storage = (int) Math.min((long) Math.max(1, this.maxStorage), newStorage);
             }
 
             boolean needInvUpdate = false;
@@ -211,7 +209,7 @@ public class TileEntitySolarPanel extends TileEntityBase
 
     public void readFromNBT(NBTTagCompound nbttagcompound) {
         super.readFromNBT(nbttagcompound);
-        this.storage = nbttagcompound.getInteger("storage");
+        this.storage = Math.max(0, Math.min(nbttagcompound.getInteger("storage"), Math.max(1, this.maxStorage)));
         this.lastX = nbttagcompound.getInteger("lastX");
         this.lastY = nbttagcompound.getInteger("lastY");
         this.lastZ = nbttagcompound.getInteger("lastZ");
@@ -256,7 +254,11 @@ public class TileEntitySolarPanel extends TileEntityBase
     }
 
     public int gaugeEnergyScaled(int i) {
-        return this.storage * i / this.maxStorage;
+        if (i <= 0 || this.maxStorage <= 0) {
+            return 0;
+        }
+        int scaled = (int) ((long) this.storage * i / this.maxStorage);
+        return Math.max(0, Math.min(i, scaled));
     }
 
     public int gaugeFuelScaled(int i) {
@@ -264,7 +266,7 @@ public class TileEntitySolarPanel extends TileEntityBase
     }
 
     public boolean isUseableByPlayer(EntityPlayer entityplayer) {
-        return entityplayer.getDistance(this.xCoord + 0.5, this.yCoord + 0.5, this.zCoord + 0.5) <= 64.0;
+        return entityplayer.getDistanceSq(this.xCoord + 0.5, this.yCoord + 0.5, this.zCoord + 0.5) <= 64.0;
     }
 
     public void openInventory() {}
@@ -297,7 +299,7 @@ public class TileEntitySolarPanel extends TileEntityBase
 
     @Override
     public float getWrenchDropRate() {
-        return 1.0F;
+        return 0.9F;
     }
 
     @Override
@@ -344,6 +346,7 @@ public class TileEntitySolarPanel extends TileEntityBase
         if (itemstack != null && itemstack.stackSize > this.getInventoryStackLimit()) {
             itemstack.stackSize = this.getInventoryStackLimit();
         }
+        this.markDirty();
     }
 
     public String getInventoryName() {
@@ -377,7 +380,9 @@ public class TileEntitySolarPanel extends TileEntityBase
     }
 
     public boolean isItemValidForSlot(int i, ItemStack itemstack) {
-        return true;
+        return itemstack != null && itemstack.getItem() instanceof IElectricItem
+            && ElectricItem.manager != null
+            && ElectricItem.manager.charge(itemstack, Double.POSITIVE_INFINITY, this.machineTire, true, true) > 0.0D;
     }
 
     public void onNetworkUpdate(String field) {}
@@ -392,11 +397,11 @@ public class TileEntitySolarPanel extends TileEntityBase
     }
 
     public double getOfferedEnergy() {
-        return Math.min(this.production, this.storage);
+        return Math.max(0.0, Math.min(this.production, this.storage));
     }
 
     public void drawEnergy(double amount) {
-        this.storage = (int) (this.storage - amount);
+        this.storage = Math.max(0, (int) (this.storage - amount));
     }
 
     public int getSourceTier() {

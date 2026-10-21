@@ -7,13 +7,14 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.oredict.OreDictionary;
 
 import com.google.common.collect.Lists;
-import com.mrfuzzihead.advancedsolarpanels.common.AdvancedSolarPanel;
+import com.mrfuzzihead.advancedsolarpanels.AdvancedSolarPanel;
 
 import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.common.registry.GameRegistry;
@@ -22,6 +23,7 @@ public class MTRecipeConfig {
 
     public static final String SEPARATOR = "; ";
     public static final String NEW_LINE = System.getProperty("line.separator");
+    private static final int MAX_STACK_SIZE = 64;
     public static List<String> defaultLines = Lists.newArrayList();
     public static boolean filled = false;
     public static String configVersion = "1.0";
@@ -55,7 +57,14 @@ public class MTRecipeConfig {
     }
 
     public static String formatItemData(MTRecipeManager.RawItemData rawItemData) {
+        if (rawItemData == null) {
+            throw new IllegalArgumentException("Unable to resolve item registry name for an MT recipe.");
+        }
         return String.format("%s:%s", rawItemData.modId, rawItemData.itemName);
+    }
+
+    private static int clampStackSize(int stackSize) {
+        return Math.max(1, Math.min(MAX_STACK_SIZE, stackSize));
     }
 
     public static void addDefaultRecipe(Object input, int inputStackSize, Object output, int outputStackSize,
@@ -81,7 +90,7 @@ public class MTRecipeConfig {
                 + "-"
                 + ((ItemStack) input).getItemDamage()
                 + ":"
-                + ((ItemStack) input).stackSize
+                + clampStackSize(inputStackSize)
                 + "; ";
         }
 
@@ -98,7 +107,7 @@ public class MTRecipeConfig {
                 + "-"
                 + ((ItemStack) output).getItemDamage()
                 + ":"
-                + ((ItemStack) output).stackSize
+                + clampStackSize(outputStackSize)
                 + "; ";
         }
 
@@ -149,11 +158,10 @@ public class MTRecipeConfig {
     public static void fillWithInitials(BufferedWriter bw) {
         populateDefaults();
         writeGuide(bw);
-        System.out.println(defaultLines.size());
-
         for (String s : defaultLines) {
             try {
-                bw.append(s + "\r\n");
+                bw.append(s)
+                    .append(NEW_LINE);
             } catch (Throwable var4) {
                 var4.printStackTrace();
             }
@@ -167,88 +175,115 @@ public class MTRecipeConfig {
             if (!f.exists()) {
                 AdvancedSolarPanel.addLog("MT recipes config file not found. Create default recipes.");
                 f.createNewFile();
-                FileOutputStream fos = new FileOutputStream(f);
-                OutputStreamWriter osw = new OutputStreamWriter(fos);
-                BufferedWriter bw = new BufferedWriter(osw);
-                fillWithInitials(bw);
-                bw.close();
-                fos.close();
+                try (FileOutputStream fos = new FileOutputStream(f);
+                    OutputStreamWriter osw = new OutputStreamWriter(fos, StandardCharsets.UTF_8);
+                    BufferedWriter bw = new BufferedWriter(osw)) {
+                    fillWithInitials(bw);
+                }
             }
 
             AdvancedSolarPanel.addLog("* * * * * * Start parsing MT recipes * * * * * * ");
-            FileInputStream fis = new FileInputStream(f);
-            BufferedReader br = new BufferedReader(new InputStreamReader(fis));
-            String line = "";
-            int lineNumber = 0;
+            try (FileInputStream fis = new FileInputStream(f);
+                BufferedReader br = new BufferedReader(new InputStreamReader(fis, StandardCharsets.UTF_8))) {
+                String line;
+                int lineNumber = 0;
 
-            while ((line = br.readLine()) != null) {
-                lineNumber++;
-                line = line.replace("\r", "")
-                    .replace("\n", "");
-                if (!line.trim()
-                    .startsWith("#")) {
-                    if (line.indexOf("#") != 0 && line.indexOf("version") != 0) {
-                        if (line.indexOf("#") > 0) {
-                            line = line.substring(0, line.indexOf("#"));
-                            line = line.trim();
-                        }
-                    } else if (line.indexOf("version") == 0) {
-                        if (line.indexOf("#") > 0) {
-                            line = line.substring(0, line.indexOf("#"));
-                            line = line.trim();
-                        }
+                while ((line = br.readLine()) != null) {
+                    lineNumber++;
+                    if (lineNumber == 1 && line.startsWith("\uFEFF")) {
+                        line = line.substring(1);
+                    }
+                    line = line.trim();
+                    if (line.isEmpty() || line.startsWith("#")) {
+                        continue;
+                    }
 
-                        String tmpString = line.substring(line.indexOf("=") + 1);
-                        if (tmpString != "") {
-                            configVersion = tmpString;
+                    int commentIndex = line.indexOf('#');
+                    if (commentIndex >= 0) {
+                        line = line.substring(0, commentIndex)
+                            .trim();
+                    }
+                    if (line.isEmpty()) {
+                        continue;
+                    }
+
+                    if (line.startsWith("version")) {
+                        int equalsIndex = line.indexOf('=');
+                        if (equalsIndex >= 0) {
+                            String version = line.substring(equalsIndex + 1)
+                                .trim();
+                            if (!version.isEmpty()) {
+                                configVersion = version;
+                            }
                         }
                         continue;
                     }
 
-                    String[] spaceSplit = line.trim()
-                        .split("; ".trim());
-                    if (spaceSplit.length != 3) {
+                    String[] parts = line.split(";");
+                    if (parts.length != 3) {
                         AdvancedSolarPanel.addLog(String.format("Ignoring line %d, incorrect format.", lineNumber));
-                    } else {
-                        String input = spaceSplit[0].trim();
-                        String output = spaceSplit[1].trim();
-                        int energy = -1;
+                        continue;
+                    }
 
-                        try {
-                            energy = Integer.parseInt(spaceSplit[2].trim());
-                        } catch (Exception var16) {
-                            AdvancedSolarPanel
-                                .addLog(String.format("Ignoring line %d, energy number is incorrect.", lineNumber));
-                            continue;
-                        }
+                    int energy;
+                    try {
+                        energy = Integer.parseInt(parts[2].trim());
+                    } catch (NumberFormatException exception) {
+                        AdvancedSolarPanel
+                            .addLog(String.format("Ignoring line %d, energy number is incorrect.", lineNumber));
+                        continue;
+                    }
+                    if (energy < 0) {
+                        AdvancedSolarPanel.addLog(
+                            String.format("Ignoring line %d, energy must not be negative (%d).", lineNumber, energy));
+                        continue;
+                    }
 
-                        List<ItemStack> inputStacks = wrap(input);
-                        if (inputStacks == null) {
-                            AdvancedSolarPanel
-                                .addLog(String.format("Ignoring line %d, failed to parse input.", lineNumber));
-                        } else {
-                            List<ItemStack> outputStacks = wrap(output);
-                            if (outputStacks == null) {
-                                AdvancedSolarPanel
-                                    .addLog(String.format("Ignoring line %d, failed to parse output.", lineNumber));
-                            } else {
-                                ItemStack outputStack = outputStacks.get(0);
+                    List<ItemStack> inputStacks;
+                    try {
+                        inputStacks = wrap(parts[0].trim());
+                    } catch (RuntimeException exception) {
+                        AdvancedSolarPanel.addLog(
+                            String.format(
+                                "Ignoring line %d, failed to parse input (%s).",
+                                lineNumber,
+                                exception.getMessage()));
+                        continue;
+                    }
+                    if (inputStacks == null) {
+                        AdvancedSolarPanel
+                            .addLog(String.format("Ignoring line %d, failed to parse input.", lineNumber));
+                        continue;
+                    }
 
-                                for (ItemStack is : inputStacks) {
-                                    MTRecipeRecord recipeToAdd = new MTRecipeRecord();
-                                    recipeToAdd.inputStack = is.copy();
-                                    recipeToAdd.outputStack = outputStack.copy();
-                                    recipeToAdd.energyPerOperation = energy;
-                                    list.add(recipeToAdd);
-                                }
-                            }
-                        }
+                    List<ItemStack> outputStacks;
+                    try {
+                        outputStacks = wrap(parts[1].trim());
+                    } catch (RuntimeException exception) {
+                        AdvancedSolarPanel.addLog(
+                            String.format(
+                                "Ignoring line %d, failed to parse output (%s).",
+                                lineNumber,
+                                exception.getMessage()));
+                        continue;
+                    }
+                    if (outputStacks == null) {
+                        AdvancedSolarPanel
+                            .addLog(String.format("Ignoring line %d, failed to parse output.", lineNumber));
+                        continue;
+                    }
+
+                    ItemStack outputStack = outputStacks.get(0);
+                    for (ItemStack inputStack : inputStacks) {
+                        MTRecipeRecord recipeToAdd = new MTRecipeRecord();
+                        recipeToAdd.inputStack = inputStack.copy();
+                        recipeToAdd.outputStack = outputStack.copy();
+                        recipeToAdd.energyPerOperation = energy;
+                        list.add(recipeToAdd);
                     }
                 }
             }
 
-            br.close();
-            fis.close();
             AdvancedSolarPanel.addLog("* * * * * * Finished parsing MT recipes * * * * * * ");
             AdvancedSolarPanel.addLog(String.format("Config loading completed, %d recipes parsed.", list.size()));
             AdvancedSolarPanel.addLog("* * * * * * Loaded recipes list * * * * * * ");
@@ -267,8 +302,8 @@ public class MTRecipeConfig {
             }
 
             AdvancedSolarPanel.addLog("* * * * * * * * * * * * * * * * * * * * *");
-        } catch (Throwable var17) {
-            AdvancedSolarPanel.addLog("Fatal error occurred parsing MT recipes config. (" + var17.toString() + ")");
+        } catch (Throwable throwable) {
+            AdvancedSolarPanel.addLog("Fatal error occurred parsing MT recipes config. (" + throwable.toString() + ")");
         }
 
         return list;
@@ -282,7 +317,7 @@ public class MTRecipeConfig {
         if (namespace.equalsIgnoreCase("oredict")) {
             if (split.length == 2 || split.length == 3) {
                 if (split.length == 3) {
-                    stackSize = Integer.parseInt(split[2]);
+                    stackSize = clampStackSize(Integer.parseInt(split[2]));
                 }
 
                 List<ItemStack> retrOreDict = OreDictionary.getOres(split[1]);
@@ -297,10 +332,7 @@ public class MTRecipeConfig {
         } else if ((namespace.equalsIgnoreCase("minecraft") || Loader.isModLoaded(namespace)) && split.length == 3) {
             String modId = split[0];
             String itemName = split[1];
-            stackSize = Integer.parseInt(split[2]);
-            if (stackSize <= 0) {
-                stackSize = 1;
-            }
+            stackSize = clampStackSize(Integer.parseInt(split[2]));
 
             int meta = 0;
             String[] itemArray = null;

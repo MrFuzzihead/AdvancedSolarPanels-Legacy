@@ -1,6 +1,6 @@
 package com.mrfuzzihead.advancedsolarpanels.common.tiles;
 
-import com.mrfuzzihead.advancedsolarpanels.common.AdvancedSolarPanel;
+import com.mrfuzzihead.advancedsolarpanels.AdvancedSolarPanel;
 
 public class TileEntityUltimateSolarPanel extends TileEntitySolarPanel {
 

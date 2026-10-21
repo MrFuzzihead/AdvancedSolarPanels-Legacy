@@ -7,6 +7,7 @@ import net.minecraft.entity.player.EntityPlayer;
 
 import com.google.common.collect.Lists;
 
+import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.network.FMLEmbeddedChannel;
 import cpw.mods.fml.common.network.FMLOutboundHandler;
 import cpw.mods.fml.common.network.FMLOutboundHandler.OutboundTarget;
@@ -18,12 +19,23 @@ public class ASPPacketHandler {
 
     public static List<Class<? extends IPacket>> packetTypes = Lists.newArrayList();
     private static EnumMap<Side, FMLEmbeddedChannel> channels;
+    private static boolean schedulerRegistered;
 
     public static void load() {
         registerPacketType(PacketGUIPressButton.class);
         registerPacketType(PacketChangeState.class);
         channels = NetworkRegistry.INSTANCE
             .newChannel("AdvSolarPanels", new ChannelHandler[] { new ASPChannelHandler() });
+        if (!schedulerRegistered) {
+            FMLCommonHandler.instance()
+                .bus()
+                .register(new ServerTaskQueue());
+            schedulerRegistered = true;
+        }
+    }
+
+    public static void scheduleServer(Runnable task) {
+        ServerTaskQueue.schedule(task);
     }
 
     public static void registerPacketType(Class<? extends IPacket> ptype) {

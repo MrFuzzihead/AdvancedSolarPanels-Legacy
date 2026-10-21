@@ -5,7 +5,7 @@ import net.minecraft.client.renderer.RenderBlocks;
 import net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher;
 import net.minecraft.world.IBlockAccess;
 
-import com.mrfuzzihead.advancedsolarpanels.common.AdvancedSolarPanel;
+import com.mrfuzzihead.advancedsolarpanels.AdvancedSolarPanel;
 import com.mrfuzzihead.advancedsolarpanels.common.tiles.TileEntityMolecularTransformer;
 
 import cpw.mods.fml.client.registry.ISimpleBlockRenderingHandler;

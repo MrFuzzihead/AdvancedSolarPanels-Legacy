@@ -1,8 +1,8 @@
-# CompactSolars-Legacy
+# AdvancedSolarPanels-Legacy
 
-Compact Solar Arrays for **Minecraft 1.7.10 (Forge)**. This is an add-on for
-[IndustrialCraft²](https://www.curseforge.com/minecraft/mc-mods/industrial-craft) that condenses many
-IC2 solar panels into a single block.
+Advanced Solar Panels for **Minecraft 1.7.10 (Forge)**. This is an add-on for
+[IndustrialCraft²](https://www.curseforge.com/minecraft/mc-mods/industrial-craft) that adds
+upgraded solar panels, solar helmets, a Molecular Transformer, and an admin-only Quantum Generator.
 
 ## Requirements
 
@@ -12,130 +12,90 @@ IC2 solar panels into a single block.
 | Minecraft Forge | 10.13.4.1614 (or compatible 1.7.10 Forge) |
 | IndustrialCraft² | 2.2.828-experimental or newer |
 
-## Solar arrays
+## Solar panels
 
-| Tier | Equivalent IC2 panels | Output at full sun | IC2 tier | Packet power | Buffer |
+| Panel | Metadata | Day output | Night/rain output | Internal storage | Max output |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| LV | 8 | 8 EU/t | 1 | 32 EU | 16 EU |
-| MV | 64 | 64 EU/t | 2 | 128 EU | 128 EU |
-| HV | 512 | 512 EU/t | 3 | 512 EU | 1024 EU |
+| Advanced Solar Panel | 0 | 8 EU/t | 1 EU/t | 32,000 EU | 32 EU/t |
+| Hybrid Solar Panel | 1 | 64 EU/t | 8 EU/t | 100,000 EU | 128 EU/t |
+| Ultimate Hybrid Solar Panel | 2 | 512 EU/t | 64 EU/t | 1,000,000 EU | 512 EU/t |
+| Quantum Solar Panel | 3 | 4096 EU/t | 2048 EU/t | 10,000,000 EU | 8192 EU/t |
 
-The buffer is exactly two panels' worth of storage (16/128/1024 EU).
+Each panel has four charge slots and can charge electric items while it generates. The slots accept only
+IC2 electric items (`IElectricItem`) that can actually take a charge; full or stacked electric items are rejected, matching IC2's charge-slot behavior. The panels use ASP's classic rules: day/night/rain output is flat, and a panel only stops when it cannot see the sky.
+The current implementation does **not** use IC2's sky-light scaling; see
+[`CODEBASE_ANALYSIS.md`](CODEBASE_ANALYSIS.md) for the parity comparison and the planned
+`useIC2SolarRules` option.
 
-Output now follows IC2's solar rules: it scales linearly with `skyLight / 15` and uses IC2's
-`balance/energy/generator/solar` value by default. At full sun the outputs are 8/64/512 EU/t.
+All values are configurable in `config/AdvancedSolarPanel.cfg` under `general`:
+`AdvancedSPGenDay`, `AdvancedSPGenNight`, `AdvancedSPStorage`, `AdvancedSPOutput`, and the
+corresponding `HybrydSP*`, `UltimateHSP*`, and `QuantumSP*` keys.
 
-The charge slot matches the array's output tier: LV charges LV, MV charges up to MV, and HV charges
-up to HV, like IC2's BatBox/CESU/MFE/MFSU storage blocks. IC2's solar panel's own slot happens to be
-tier 1 because its output is tier 1; CompactSolars intentionally exposes the higher array tier.
+### Wrench behavior
 
-## Solar hats
+Panels follow IC2 machine drops: breaking one with a pickaxe (or any non-wrench tool) drops a
+**Basic Machine Casing**, while an IC2 wrench has a **90%** chance to preserve the panel. IC2's
+electric wrench lossless mode forces a successful wrench drop. Charge-slot contents are dropped
+separately. Use a wrench if you want the panel itself back.
 
-Each tier also has a solar hat that charges electric armor while the player is in sunlight:
+## Solar helmets
 
-| Hat | Charge rate | Tier |
-| --- | ---: | ---: |
-| LV Solar Hat | 8 EU/t | 1 |
-| MV Solar Hat | 64 EU/t | 2 |
-| HV Solar Hat | 512 EU/t | 3 |
+| Helmet | Day/night generation | Max charge | Transfer limit | Tier | Air supply |
+| --- | ---: | ---: | ---: | ---: | --- |
+| Advanced Solar Helmet | 8 / 1 EU/t | 1,000,000 EU | 3,000 EU/t | 3 | No |
+| Hybrid Solar Helmet | 64 / 8 EU/t | 10,000,000 EU | 10,000 EU/t | 4 | Yes |
+| Ultimate Solar Helmet | 512 / 64 EU/t | 10,000,000 EU | 10,000 EU/t | 4 | Yes |
 
-Each hat charges **only the chestplate**, accepts **any tier** (`Integer.MAX_VALUE`), ignores the
-armor's transfer limit, and has **no confusion mechanic**. It keeps the array-rate output
-(8/64/512 EU/t) and syncs the player's container after a successful charge.
+The helmets charge electric items in the player's armor and main inventory while the player is in
+sunlight. The Hybrid and Ultimate helmets also consume 1,000 EU to replenish air when the player is
+underwater. Helmet recipes use the matching solar panel and the IC2 nano/quantum helmet.
 
-IC2's own solar helmet uses the same chest-only/any-tier/ignore-transfer/no-confusion model, but
-charges at **1 EU/t** regardless of the panel count and has no useful tooltip. CompactSolars keeps
-the array-rate output, the tooltip, and the per-tier textures.
+## Molecular Transformer
 
-Hats use a single shared, infinite-durability armor material. Their tooltip shows the charge rate
-(`Power Output: X EU/t max`), the power tier, and a short description.
+The Molecular Transformer converts items using EU. Recipes are stored in
+`config/AdvancedSolarPanel_MTRecipes.cfg`; the file format is documented at the top of the generated
+file:
 
-## Presentation
+```
+inputItem:stackSize; outputItem:stackSize; energy
+```
 
-- **Array tooltip:** matches IC2's solar panel format, e.g. `Power Output: 8 EU/t max`, using
-  IC2's own localization keys.
-- **Hat tooltip:** shows the charge rate, `Power Tier: n`, and a short description.
-- **GUI:** the array title and inventory label are localized.
-- **Creative menu:** arrays and solar hats are listed in IC2's creative tab.
-- **Sound:** uses IC2's metal block step/place/break sound. IC2's solar panel has no ambient
-  generator loop, so there is no continuous hum.
+Inputs and outputs can be item ids (`minecraft:item_name-meta` or `modID:item_name-meta`) or ore
+dictionary entries (`oredict:name`). A `#` starts a comment. Stack sizes are clamped to 1–64 and
+negative energy is rejected. The machine has one input slot, one output slot, a progress display, and
+a NEI recipe page.
 
-## Configuration
+## Quantum Generator
 
-`config/CompactSolars.cfg`:
-
-| Option | Default | Description |
-| --- | ---: | --- |
-| `general.scaleFactor` | `1` | Generation interval. `1` generates every tick; `2` generates on average every other tick, etc. Values below `1` are clamped to `1`. This does not change the per-generation EU amount. |
-| `general.solarBaseValue` | IC2's `balance/energy/generator/solar` (usually `1.0`) | EU/t per panel at full sky light (15). Set to `0` to disable generation. Negative or NaN values fall back to `1.0`. |
-| `general.wrenchParity` | `true` | IC2-style wrench behavior: breaking without a wrench drops a Basic Machine Casing, and a wrench has a 90% chance to preserve the tier. Set `false` for the old always-drop behavior. |
-
-## Wrench behavior
-
-With `wrenchParity=true` (the default):
-
-- Breaking an array without a wrench drops a **Basic Machine Casing**, even for MV/HV. This is the
-  IC2-style machine drop for a machine broken without a wrench.
-- A wrench roll has a **90%** chance to preserve the original tier. On failure, the normal Basic
-  Machine Casing drop is used.
-- IC2's electric wrench lossless mode can force a successful wrench operation, matching IC2's
-  behavior.
-- Set `wrenchParity=false` to restore the old behavior: every break drops the exact tier.
+The Quantum Generator is an admin/map-maker block with **no crafting recipe**. It produces
+configurable EU/t and is disabled by a redstone signal. Its defaults are set in
+`config/AdvancedSolarPanel.cfg` under `quantum generator`:
+`quantumGeneratorDefaultProduction` and `quantumGeneratorDefaultPacketSize`.
 
 ## Recipes
 
-Array recipes are shaped and use eight of the previous tier:
+- The default recipe mode is the “hard” recipe set; enable `Enable hard recipes = false` for the
+  simpler set.
+- The Advanced Solar Panel uses an IC2 solar panel, advanced circuits/alloy, and the tier materials.
+- Hybrid and Ultimate panels are upgraded from the previous tier.
+- The Quantum Solar Panel requires the Quantum Core.
+- Helmet recipes use the matching panel plus the IC2 nano/quantum helmet.
+- Individual recipes can be disabled under `recipes settings`.
+- OreDictionary names are used where possible (`ingotUranium`, `ingotIridium`, etc.).
 
-- **LV Solar Array:** 8 IC2 solar panels + 1 LV transformer
-- **MV Solar Array:** 8 LV Solar Arrays + 1 MV transformer
-- **HV Solar Array:** 8 MV Solar Arrays + 1 HV transformer
+## Configuration
 
-Hat recipes are shapeless:
+`config/AdvancedSolarPanel.cfg` includes:
 
-- **Solar Hat:** 1 matching Solar Array + 1 iron helmet
+| Section | Examples | Purpose |
+| --- | --- | --- |
+| `general` | `AdvancedSPGenDay`, `HybrydSPOutput`, `QuantumSPStorage` | Per-tier generation, storage, and output |
+| `recipes settings` | `Disable HybridSolarPanel recipe`, `Enable hard recipes` | Recipe toggles |
+| `quantum generator` | `quantumGeneratorDefaultProduction`, `quantumGeneratorDefaultPacketSize` | QGen defaults |
 
-### OreDictionary support
+Negative generation values are clamped to 0; storage and output values are clamped to at least 1.
 
-The recipes use Forge's OreDictionary where possible, so packs and other mods can substitute
-alternatives:
-
-| Ore name | Registered default |
-| --- | --- |
-| `solarPanel` | IC2 solar panel |
-| `transformerLV` | IC2 LV transformer |
-| `transformerMV` | IC2 MV transformer |
-| `transformerHV` | IC2 HV transformer |
-| `helmetIron` | vanilla iron helmet |
-
-If an IC2 input is missing, recipe registration logs an error instead of crashing the game. The ore
-entries above are registered by CompactSolars and can be extended by other mods or pack scripts.
-
-## IC2 parity status
-
-The array generation rules now match IC2's solar generator:
-
-- sun predicate: `skyLight > 4`, no-sky check, `canBlockSeeTheSky`, desert exception, rain/thunder
-  check;
-- linear `skyLight / 15` output scaling;
-- IC2 `balance/energy/generator/solar` value by default;
-- 128-tick sun refresh and an immediate refresh on load.
-
-Remaining known differences:
-
-- Hats use the array-rate output (8/64/512 EU/t) rather than IC2's flat 1 EU/t; the chest-only,
-  any-tier, ignore-transfer, and no-confusion behavior now matches IC2.
-- The GPLv3/MIT licensing question is unresolved.
-
-See [CODEBASE_ANALYSIS.md](CODEBASE_ANALYSIS.md) for the full review and the remaining planned work.
-
-## World compatibility
-
-All three tiers now share one tile entity class. The tier is persisted in NBT, and the old per-tier
-tile entity IDs (`CompactSolarType.LV`, `CompactSolarType.MV`, `CompactSolarType.HV`) are registered
-as aliases of the unified tile entity, so existing worlds should load their arrays at the correct
-tier. Back up a world before testing an upgrade from an older build.
-
-## Building
+## Building and testing
 
 This project uses the GTNewHorizons 1.7.10 Gradle toolchain. The correct JDK is provisioned by
 Gradle.
@@ -144,18 +104,23 @@ Gradle.
 ./gradlew build        # Windows: gradlew.bat build
 ./gradlew test         # unit tests
 ./gradlew runClient    # development client
+./gradlew runServer    # development server
 ```
 
-Built jars are placed in `build/libs/`.
+Built jars are placed in `build/libs/`. The current test suite covers solar generation math, MT recipe
+validation, MT energy-buffer behavior, and namespace/lang resource invariants.
 
-## License
+## Compatibility notes
 
-Upstream CompactSolars is licensed under **GPL v3**. This repository's `LICENSE` file currently says
-MIT and the imported source headers were removed during the port; the licensing status is unresolved
-and must be decided before distribution. See `LICENSE` and the upstream project for details.
+- The mod id is `AdvancedSolarPanel` and existing registry names/worlds must not be renamed.
+- The Molecular Transformer recipe file and NEI integration are documented in
+  [`CODEBASE_ANALYSIS.md`](CODEBASE_ANALYSIS.md).
+- GT5-Unofficial and NewHorizonsCoreMod reference the old `advsolar.*` internal classes; the
+  compatibility impact of the package rename is covered in `CODEBASE_ANALYSIS.md` §6.
 
 ## Credits
 
-- Original CompactSolars by cpw, based on an idea by Zippinus
-- 1.7.2 update by ProgWML6
-- 1.7.10 maintenance and port by MrFuzzihead
+- Original Advanced Solar Panels by SeNtiMeL, based on the original mod by Icedfire
+- Textures by Krezzard
+- 1.7.10 maintenance and port by MrFuzzihead and contributors
+- Thanks to mak326428 for development help

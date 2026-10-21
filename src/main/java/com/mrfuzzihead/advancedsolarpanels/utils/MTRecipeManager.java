@@ -12,8 +12,8 @@ import net.minecraft.item.ItemStack;
 import net.minecraftforge.oredict.OreDictionary;
 
 import com.google.common.collect.Lists;
+import com.mrfuzzihead.advancedsolarpanels.AdvancedSolarPanel;
 import com.mrfuzzihead.advancedsolarpanels.api.IMTRecipeManager;
-import com.mrfuzzihead.advancedsolarpanels.common.AdvancedSolarPanel;
 
 import cpw.mods.fml.common.registry.GameData;
 import cpw.mods.fml.common.registry.GameRegistry.UniqueIdentifier;
@@ -58,16 +58,25 @@ public class MTRecipeManager implements IMTRecipeManager {
 
     public void initRecipes() {
         transformerRecipes.clear();
+        if (AdvancedSolarPanel.configFileName == null || AdvancedSolarPanel.configFileName.isEmpty()) {
+            AdvancedSolarPanel.addLog("ASP config path is unavailable; MT recipes were not loaded.");
+            return;
+        }
+
         String configFilePath = AdvancedSolarPanel.configFileName
             .substring(0, AdvancedSolarPanel.configFileName.lastIndexOf(File.separatorChar) + 1);
         String tmpFileName = AdvancedSolarPanel.configFileName
             .substring(AdvancedSolarPanel.configFileName.lastIndexOf(File.separatorChar) + 1);
-        String recipesFileName = tmpFileName.substring(0, tmpFileName.lastIndexOf("."));
-        String recipesFileExt = tmpFileName.substring(tmpFileName.lastIndexOf("."));
+        int dotIndex = tmpFileName.lastIndexOf('.');
+        String recipesFileName = dotIndex >= 0 ? tmpFileName.substring(0, dotIndex) : tmpFileName;
+        String recipesFileExt = dotIndex >= 0 ? tmpFileName.substring(dotIndex) : ".cfg";
         recipesFileName = recipesFileName + "_MTRecipes" + recipesFileExt;
         File file = new File(configFilePath, recipesFileName);
-        transformerRecipes.clear();
         transformerRecipes.addAll(MTRecipeConfig.parse(file));
+    }
+
+    private static int clampStackSize(int stackSize) {
+        return Math.max(1, Math.min(64, stackSize));
     }
 
     private static void lazyReflectionInit() {
@@ -108,9 +117,21 @@ public class MTRecipeManager implements IMTRecipeManager {
 
     @Override
     public void addMTRecipe(ItemStack inputItem, ItemStack outputItem, int energyPerOperation) {
+        if (inputItem == null || outputItem == null) {
+            throw new IllegalArgumentException("MT recipes require non-null input and output stacks.");
+        }
+        if (energyPerOperation < 0) {
+            throw new IllegalArgumentException("MT recipe energy must not be negative: " + energyPerOperation);
+        }
+
+        ItemStack inputStack = inputItem.copy();
+        inputStack.stackSize = clampStackSize(inputStack.stackSize);
+        ItemStack outputStack = outputItem.copy();
+        outputStack.stackSize = clampStackSize(outputStack.stackSize);
+
         MTRecipeRecord recipeToAdd = new MTRecipeRecord();
-        recipeToAdd.inputStack = inputItem.copy();
-        recipeToAdd.outputStack = outputItem.copy();
+        recipeToAdd.inputStack = inputStack;
+        recipeToAdd.outputStack = outputStack;
         recipeToAdd.energyPerOperation = energyPerOperation;
         transformerRecipes.add(recipeToAdd);
     }

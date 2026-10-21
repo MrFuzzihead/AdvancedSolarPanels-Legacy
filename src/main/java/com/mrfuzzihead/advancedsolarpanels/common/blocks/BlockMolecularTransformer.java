@@ -10,13 +10,12 @@ import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.IIcon;
 import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
 
-import com.mrfuzzihead.advancedsolarpanels.common.AdvancedSolarPanel;
+import com.mrfuzzihead.advancedsolarpanels.AdvancedSolarPanel;
 import com.mrfuzzihead.advancedsolarpanels.common.tiles.TileEntityBase;
 import com.mrfuzzihead.advancedsolarpanels.common.tiles.TileEntityMolecularTransformer;
 
@@ -28,11 +27,13 @@ public class BlockMolecularTransformer extends BlockContainer {
         super(Material.iron);
         this.setHardness(3.0F);
         this.setLightLevel(1.0F);
+        this.setStepSound(Block.soundTypeMetal);
         this.setCreativeTab(AdvancedSolarPanel.ic2Tab);
     }
 
     public void registerBlockIcons(IIconRegister par1IconRegister) {
         this.icon = par1IconRegister.registerIcon("advancedsolarpanel:qgen_a_side");
+        this.blockIcon = this.icon;
     }
 
     public boolean isOpaqueCube() {
@@ -47,13 +48,14 @@ public class BlockMolecularTransformer extends BlockContainer {
         return AdvancedSolarPanel.blockMolecularTransformerRenderID;
     }
 
-    public static boolean isActive(IBlockAccess var0, int var1, int var2, int var3) {
-        return ((TileEntityBase) var0.getTileEntity(var1, var2, var3)).getActive();
+    public static boolean isActive(IBlockAccess world, int x, int y, int z) {
+        TileEntity te = world.getTileEntity(x, y, z);
+        return te instanceof TileEntityBase && ((TileEntityBase) te).getActive();
     }
 
     public void breakBlock(World world, int i, int j, int k, Block par5, int par6) {
         TileEntity tileentity = world.getTileEntity(i, j, k);
-        if (tileentity != null) {
+        if (tileentity instanceof TileEntityMolecularTransformer) {
             this.dropItems((TileEntityMolecularTransformer) tileentity, world);
         }
 
@@ -105,13 +107,7 @@ public class BlockMolecularTransformer extends BlockContainer {
                         tileentity.xCoord + rx,
                         tileentity.yCoord + ry,
                         tileentity.zCoord + rz,
-                        new ItemStack(item.getItem(), item.stackSize, item.getItemDamage()));
-                    if (item.hasTagCompound()) {
-                        entityItem.getEntityItem()
-                            .setTagCompound(
-                                (NBTTagCompound) item.getTagCompound()
-                                    .copy());
-                    }
+                        item.copy());
 
                     float factor = 0.05F;
                     entityItem.motionX = rand.nextGaussian() * factor;

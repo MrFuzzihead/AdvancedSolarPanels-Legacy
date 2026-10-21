@@ -14,7 +14,7 @@ import net.minecraft.util.ResourceLocation;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.opengl.GL11;
 
-import com.mrfuzzihead.advancedsolarpanels.common.AdvancedSolarPanel;
+import com.mrfuzzihead.advancedsolarpanels.AdvancedSolarPanel;
 import com.mrfuzzihead.advancedsolarpanels.common.container.ContainerQGenerator;
 import com.mrfuzzihead.advancedsolarpanels.common.tiles.TileEntityQGenerator;
 import com.mrfuzzihead.advancedsolarpanels.network.PacketGUIPressButton;

@@ -13,7 +13,8 @@ import cpw.mods.fml.relauncher.SideOnly;
 
 public class ItemAdvSolarPanel extends ItemBlock {
 
-    private List<String> itemNames;
+    public static final int MAX_METADATA = 4;
+    private final List<String> itemNames;
 
     public ItemAdvSolarPanel(Block b) {
         super(b);
@@ -24,11 +25,15 @@ public class ItemAdvSolarPanel extends ItemBlock {
     }
 
     public int getMetadata(int i) {
-        return i;
+        return i >= 0 && i <= MAX_METADATA ? i : 0;
     }
 
     public String getUnlocalizedName(ItemStack itemstack) {
-        return this.itemNames.get(itemstack.getItemDamage());
+        int metadata = itemstack.getItemDamage();
+        if (metadata < 0 || metadata >= this.itemNames.size()) {
+            metadata = 0;
+        }
+        return this.itemNames.get(metadata);
     }
 
     public void addItemsNames() {

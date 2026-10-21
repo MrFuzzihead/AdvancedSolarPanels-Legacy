@@ -16,7 +16,7 @@ public class ASPItemAPI {
     private static void lazyInit() {
         if (!inited) {
             try {
-                aspClass = Class.forName("com.mrfuzzihead.advancedsolarpanels.common.AdvancedSolarPanel");
+                aspClass = Class.forName("com.mrfuzzihead.advancedsolarpanels.AdvancedSolarPanel");
             } catch (Exception var1) {
                 FMLLog.severe("Fatal exception hapenned when tried to instantiate ASP API.", new Object[0]);
             }

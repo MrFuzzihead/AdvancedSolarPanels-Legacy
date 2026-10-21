@@ -22,8 +22,11 @@ public class ASPChannelHandler extends FMLIndexedMessageToMessageCodec<IPacket> 
 
         try {
             msg.write(new DataOutputStream(baos));
-        } catch (Throwable var6) {
-            var6.printStackTrace();
+        } catch (Throwable throwable) {
+            throw new RuntimeException(
+                "Failed to encode ASP packet " + msg.getClass()
+                    .getName(),
+                throwable);
         }
 
         target.writeBytes(baos.toByteArray());
