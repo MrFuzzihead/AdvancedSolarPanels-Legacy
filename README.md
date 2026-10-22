@@ -46,13 +46,26 @@ separately. Use a wrench if you want the panel itself back.
 | Hybrid Solar Helmet | 64 EU/t | 10,000,000 EU | 10,000 EU/t | 2 | Yes |
 | Ultimate Solar Helmet | 512 EU/t | 10,000,000 EU | 10,000 EU/t | 3 | Yes |
 
-The helmets follow IC2's solar-helmet model: they charge **only the chestplate**, accept **any tier**,
-ignore the chestplate's transfer limit, and sync the player inventory after charging. They charge
-only when IC2's solar visibility predicate is true; unlike the panels, they do **not** generate at
-night or in rain. The Hybrid and Ultimate helmets also consume 1,000 EU from their own internal
-buffer to replenish underwater air. Helmet tiers match their corresponding panel tiers, and the
-tooltip shows the charge rate, tier, and description. Helmet recipes use the matching solar panel and
-the IC2 nano/quantum helmet.
+By default, the helmets follow IC2's solar-helmet targeting: charge the **chestplate first**, accept
+**any tier**, ignore the chestplate's transfer limit, and send any overflow to the helmet itself.
+They sync the player inventory after charging. Setting `general.solarHelmetLegacyCharging=true`
+restores the original ASP behavior: charge all armor slots (including the helmet) and then the main
+inventory, using the original tier/transfer-limit rules.
+
+Generation uses ASP's graceful sky-light scaling rather than IC2's binary on/off rule:
+
+| Condition | Output |
+| --- | ---: |
+| Full day | 100% |
+| Dawn/dusk | 2/3 |
+| Night | 1/3 |
+| Rain/thunder in a non-desert biome | 1/3 |
+| Blocked sky or no-sky dimension | 0 |
+
+Deserts ignore the rain penalty, matching IC2. The Hybrid and Ultimate helmets also consume 1,000 EU
+from their own internal buffer to replenish underwater air. Helmet tiers match their corresponding
+panel tiers, and the tooltip shows the charge rate, tier, and description. Helmet recipes use the
+matching solar panel and the IC2 nano/quantum helmet.
 
 ## Molecular Transformer
 
@@ -95,7 +108,7 @@ per-tick cap, so the offered output is `min(production, maxPacketSize)`.
 
 | Section | Examples | Purpose |
 | --- | --- | --- |
-| `general` | `AdvancedSPGenDay`, `HybrydSPOutput`, `QuantumSPStorage` | Per-tier generation, storage, and output |
+| `general` | `AdvancedSPGenDay`, `HybrydSPOutput`, `QuantumSPStorage`, `solarHelmetLegacyCharging` | Per-tier generation/storage/output and helmet charging mode |
 | `recipes settings` | `Disable HybridSolarPanel recipe`, `Enable hard recipes` | Recipe toggles |
 | `quantum generator` | `quantumGeneratorDefaultProduction`, `quantumGeneratorDefaultPacketSize` | QGen defaults |
 

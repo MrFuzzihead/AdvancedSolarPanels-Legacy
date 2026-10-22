@@ -11,15 +11,17 @@
 
 **Method:** static review of 45 Java files (~5,000 lines), resource/lang audit, source/metadata validation, build check, `NAMESPACE_CHANGE.md` verification, decompiled IC2/upstream comparison, and a formula-level simulation of the 1.7.10 sun/light math.
 
-> **First-batch fixes implemented after this review:** the NEI compile dependency was corrected, the MT Core reflector recipe now uses a fresh stack, packets are scheduled onto the game thread (server task queue + client task scheduler), `Thread.getAllStackTraces()` was removed, the MT GUI recipe-index crash and static caption leak were fixed, MT recipes are validated (non-negative energy, 1–64 stack sizes), the MT energy buffer/progress is persisted and capped, `getDemandedEnergy` accounts for buffered energy, output-blocked injection is rejected, metadata/config/divide-by-zero/NPE guards were added, panel charge slots now use IC2-style simulated charge acceptance (electric, not full, not stacked), panel drops now use IC2’s wrench/casing behavior, `modId`/`modName` metadata now match `@Mod`, metal block sounds were set on the machines, and a 43-test JUnit baseline was added (`./gradlew build` passes).
+> **First-batch fixes implemented after this review:** the NEI compile dependency was corrected, the MT Core reflector recipe now uses a fresh stack, packets are scheduled onto the game thread (server task queue + client task scheduler), `Thread.getAllStackTraces()` was removed, the MT GUI recipe-index crash and static caption leak were fixed, MT recipes are validated (non-negative energy, 1–64 stack sizes), the MT energy buffer/progress is persisted and capped, `getDemandedEnergy` accounts for buffered energy, output-blocked injection is rejected, metadata/config/divide-by-zero/NPE guards were added, panel charge slots now use IC2-style simulated charge acceptance (electric, not full, not stacked), panel drops now use IC2’s wrench/casing behavior, `modId`/`modName` metadata now match `@Mod`, metal block sounds were set on the machines, and a 44-test JUnit baseline was added (`./gradlew build` passes).
 >
 >
 > **Second-batch changes implemented:** real panel source/charge tiers (1/2/3/5), MT sink tier EV (4),
 > MT GUI recipe data sync via description packets, MT recipe indexing and NBT-aware matching,
 > dynamic ore-dictionary input matching, container change-only sync, panel shift-click validation and
 > range fixes, QGen max-packet cap / GUI layout / redstone indicator / shift-click cleanup, and solar
-> helmet parity (chest-only, any tier, ignore transfer limit, stateless IC2 sun visibility, panel
-> tiers, tooltip, inventory sync). Solar generation rules remain deferred.
+> helmet parity (stateless IC2 sun visibility, panel tiers, tooltip, inventory sync) plus the new
+> helmet charging modes (chest-first/self-overflow by default, legacy all-armor/inventory via config)
+> and graceful light scaling (full day, 2/3 dawn/dusk, 1/3 night/rain). Solar *panel* generation rules
+> remain deferred.
 >
 > The line references below were captured before the Spotless formatting pass; use the class/method names and paths as the authoritative anchors.
 
@@ -432,10 +434,10 @@ position every tick and no longer stores ticker/visibility/build-up state on the
   energy buffer rather than armor support. If a chestplate is present it is charged first, so this
   is not always visible, but it is still a deviation.
 
-**Fix applied:** helmets now charge only `armorInventory[2]`, use `Integer.MAX_VALUE` tier, ignore
-the chestplate transfer limit, and call `detectAndSendChanges()` after a successful charge. The
-helmet's own absorption/durability and Hybrid/Ultimate air supply remain ASP features; the helmet
-must be charged externally for air supply.
+**Fix applied:** by default helmets charge `armorInventory[2]` first, use `Integer.MAX_VALUE` tier,
+ignore the chestplate transfer limit, then send overflow to the helmet itself, and call
+`detectAndSendChanges()` after a successful charge. `general.solarHelmetLegacyCharging=true` restores
+the original all-armor/main-inventory behavior. Hybrid/Ultimate air supply remains an ASP feature.
 
 #### B18. (Fixed) Quantum Generator `maxPacketSize` was dead in the output path
 
@@ -1233,7 +1235,7 @@ $ ./gradlew build --offline
 BUILD SUCCESSFUL
 ```
 
-The test baseline currently has 43 passing tests across ten classes:
+The test baseline currently has 44 passing tests across ten classes:
 `SolarPanelGenerationTest`, `SolarTierTest`, `SolarMathTest`, `HelmetRulesTest`, `HelmetItemTest`,
 `MTRecipeValidationTest`, `MolecularTransformerLogicTest`, `NetworkTaskTest`, `SlotElectricItemTest`, and
 `NamespaceResourceTest`.

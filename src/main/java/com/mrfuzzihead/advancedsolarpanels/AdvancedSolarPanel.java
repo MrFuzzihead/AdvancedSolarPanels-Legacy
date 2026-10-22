@@ -108,6 +108,7 @@ public class AdvancedSolarPanel {
     private static boolean disableDoubleSlabRecipe;
     private static boolean enableSimpleAdvancedSolarPanelRecipes;
     private static boolean enableHardRecipes;
+    public static boolean solarHelmetLegacyCharging;
     public static final String CATEGORY_RECIPES = "recipes settings";
     public static final String CATEGORY_QGENERATOR = "quantum generator";
     public static Side side;
@@ -227,6 +228,8 @@ public class AdvancedSolarPanel {
                 .getBoolean(false);
             enableHardRecipes = config.get("recipes settings", "Enable hard recipes", true)
                 .getBoolean(true);
+            solarHelmetLegacyCharging = config.get("general", "solarHelmetLegacyCharging", false)
+                .getBoolean(false);
 
             advGenDay = clampConfig("AdvancedSPGenDay", advGenDay, 0);
             advGenNight = clampConfig("AdvancedSPGenNight", advGenNight, 0);

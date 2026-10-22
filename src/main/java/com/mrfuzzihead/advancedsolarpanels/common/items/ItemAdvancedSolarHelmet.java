@@ -89,20 +89,59 @@ public class ItemAdvancedSolarHelmet extends ItemArmor implements IElectricItem,
         int xCoord = MathHelper.floor_double(player.posX);
         int yCoord = MathHelper.floor_double(player.posY);
         int zCoord = MathHelper.floor_double(player.posZ);
-        if (!SolarMath.isSunVisible(worldObj, xCoord, yCoord, zCoord)) {
+        double factor = SolarMath.generationFactor(worldObj, xCoord, yCoord, zCoord);
+        if (factor <= 0.0D) {
             return;
         }
 
-        ItemStack chest = player.inventory.armorInventory[HelmetRules.CHEST_ARMOR_SLOT];
-        if (chest == null || chest == itemStack) {
-            return;
+        double available = this.genDay * factor;
+        double used;
+        if (AdvancedSolarPanel.solarHelmetLegacyCharging) {
+            used = this.chargeLegacy(player, available);
+        } else {
+            used = this.chargeChestThenHelmet(player, itemStack, available);
         }
 
-        double used = ElectricItem.manager
-            .charge(chest, this.genDay, HelmetRules.ANY_CHARGE_TIER, HelmetRules.IGNORE_TRANSFER_LIMIT, false);
         if (used > 0.0D && player.openContainer != null) {
             player.openContainer.detectAndSendChanges();
         }
+    }
+
+    /** Original ASP behavior: charge all armor (including the helmet), then the main inventory. */
+    private double chargeLegacy(EntityPlayer player, double available) {
+        double remaining = available;
+        for (ItemStack armor : player.inventory.armorInventory) {
+            if (remaining <= 0.0D) {
+                break;
+            }
+            if (armor != null && armor.getItem() instanceof IElectricItem) {
+                remaining -= ElectricItem.manager.charge(armor, remaining, 4, false, false);
+            }
+        }
+        for (ItemStack stack : player.inventory.mainInventory) {
+            if (remaining <= 0.0D) {
+                break;
+            }
+            if (stack != null && stack.getItem() instanceof IElectricItem) {
+                remaining -= ElectricItem.manager.charge(stack, remaining, 4, false, false);
+            }
+        }
+        return available - remaining;
+    }
+
+    /** IC2-style behavior with a small ASP extension: chest first, then overflow to the helmet. */
+    private double chargeChestThenHelmet(EntityPlayer player, ItemStack helmet, double available) {
+        double remaining = available;
+        ItemStack chest = player.inventory.armorInventory[HelmetRules.CHEST_ARMOR_SLOT];
+        if (chest != null && chest != helmet && chest.getItem() instanceof IElectricItem) {
+            remaining -= ElectricItem.manager
+                .charge(chest, remaining, HelmetRules.ANY_CHARGE_TIER, HelmetRules.IGNORE_TRANSFER_LIMIT, false);
+        }
+        if (remaining > 0.0D && helmet.getItem() instanceof IElectricItem) {
+            remaining -= ElectricItem.manager
+                .charge(helmet, remaining, HelmetRules.ANY_CHARGE_TIER, HelmetRules.IGNORE_TRANSFER_LIMIT, false);
+        }
+        return available - remaining;
     }
 
     @Override
@@ -203,7 +242,7 @@ public class ItemAdvancedSolarHelmet extends ItemArmor implements IElectricItem,
         list.add(StatCollector.translateToLocal("ic2.item.tooltip.PowerTier") + " " + this.tier);
         String descKey = "item.advancedSolarHelmet.desc";
         String description = StatCollector.translateToLocal(descKey);
-        list.add(description.equals(descKey) ? "Charges the chestplate while in sunlight." : description);
+        list.add(description.equals(descKey) ? "Charges the chestplate using available sunlight." : description);
         if (HelmetRules.hasAirSupply(this.solarType)) {
             String airKey = "item.advancedSolarHelmet.air";
             String airDescription = StatCollector.translateToLocal(airKey);

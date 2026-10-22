@@ -8,6 +8,9 @@ public final class SolarMath {
 
     /** IC2 solar generators require at least this top-of-world sky light value. */
     public static final int MIN_SKY_LIGHT = 5;
+    public static final double DAWN_DUSK_FACTOR = 2.0D / 3.0D;
+    public static final double NIGHT_FACTOR = 1.0D / 3.0D;
+    public static final double RAIN_FACTOR = 1.0D / 3.0D;
 
     private SolarMath() {}
 
@@ -32,5 +35,37 @@ public final class SolarMath {
     public static boolean isSunVisible(int skyLight, boolean hasNoSky, boolean canSeeSky, boolean raining,
         boolean thundering, boolean desert) {
         return skyLight >= MIN_SKY_LIGHT && !hasNoSky && canSeeSky && (desert || (!raining && !thundering));
+    }
+
+    /**
+     * ASP's graceful light/weather scaling. Full day is 100%, dawn/dusk is 2/3, and night or bad
+     * weather is 1/3. Blocked sky or a no-sky dimension is still 0.
+     */
+    public static double generationFactor(World world, int x, int y, int z) {
+        return generationFactor(
+            skyLight(world, x, z),
+            world.provider.hasNoSky,
+            world.canBlockSeeTheSky(x, y + 1, z),
+            world.isRaining(),
+            world.isThundering(),
+            world.getWorldChunkManager()
+                .getBiomeGenAt(x, z) instanceof BiomeGenDesert);
+    }
+
+    public static double generationFactor(int skyLight, boolean hasNoSky, boolean canSeeSky, boolean raining,
+        boolean thundering, boolean desert) {
+        if (hasNoSky || !canSeeSky) {
+            return 0.0D;
+        }
+        if ((raining || thundering) && !desert) {
+            return RAIN_FACTOR;
+        }
+        if (skyLight >= 12) {
+            return 1.0D;
+        }
+        if (skyLight >= MIN_SKY_LIGHT) {
+            return DAWN_DUSK_FACTOR;
+        }
+        return NIGHT_FACTOR;
     }
 }
