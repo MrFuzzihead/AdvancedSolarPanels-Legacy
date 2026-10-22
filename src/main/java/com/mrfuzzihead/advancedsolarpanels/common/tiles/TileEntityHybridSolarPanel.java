@@ -9,7 +9,6 @@ public class TileEntityHybridSolarPanel extends TileEntitySolarPanel {
             "blockHybridSolarPanel.name",
             3,
             AdvancedSolarPanel.hGenDay,
-            AdvancedSolarPanel.hGenNight,
             AdvancedSolarPanel.hOutput,
             AdvancedSolarPanel.hStorage,
             2);

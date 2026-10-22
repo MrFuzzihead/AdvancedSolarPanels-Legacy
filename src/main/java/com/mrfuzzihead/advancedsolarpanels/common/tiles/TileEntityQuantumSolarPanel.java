@@ -9,7 +9,6 @@ public class TileEntityQuantumSolarPanel extends TileEntitySolarPanel {
             "blockQuantumSolarPanel.name",
             4,
             AdvancedSolarPanel.qpGenDay,
-            AdvancedSolarPanel.qpGenNight,
             AdvancedSolarPanel.qpOutput,
             AdvancedSolarPanel.qpStorage,
             5);

@@ -14,22 +14,24 @@ upgraded solar panels, solar helmets, a Molecular Transformer, and an admin-only
 
 ## Solar panels
 
-| Panel | Metadata | Tier | Day output | Night/rain output | Internal storage | Max output |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Advanced Solar Panel | 0 | 1 | 8 EU/t | 1 EU/t | 32,000 EU | 32 EU/t |
-| Hybrid Solar Panel | 1 | 2 | 64 EU/t | 8 EU/t | 100,000 EU | 128 EU/t |
-| Ultimate Hybrid Solar Panel | 2 | 3 | 512 EU/t | 64 EU/t | 1,000,000 EU | 512 EU/t |
-| Quantum Solar Panel | 3 | 5 | 4096 EU/t | 2048 EU/t | 10,000,000 EU | 8192 EU/t |
+| Panel | Metadata | Tier | Day output | Dusk/dawn | Night/rain | Internal storage | Max output |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Advanced Solar Panel | 0 | 1 | 8 EU/t | 2 EU/t | 1 EU/t | 32,000 EU | 32 EU/t |
+| Hybrid Solar Panel | 1 | 2 | 64 EU/t | 16 EU/t | 8 EU/t | 100,000 EU | 128 EU/t |
+| Ultimate Hybrid Solar Panel | 2 | 3 | 512 EU/t | 128 EU/t | 64 EU/t | 1,000,000 EU | 512 EU/t |
+| Quantum Solar Panel | 3 | 5 | 4096 EU/t | 1024 EU/t | 512 EU/t | 10,000,000 EU | 8192 EU/t |
 
 Each panel has four charge slots and can charge electric items while it generates. The slots accept only
-IC2 electric items (`IElectricItem`) that can actually take a charge at the panel's tier; full or stacked electric items are rejected, matching IC2's charge-slot behavior. The panels use ASP's classic rules: day/night/rain output is flat, and a panel only stops when it cannot see the sky.
-The current implementation does **not** use IC2's sky-light scaling; see
-[`CODEBASE_ANALYSIS.md`](CODEBASE_ANALYSIS.md) for the parity comparison and the planned
-`useIC2SolarRules` option.
+IC2 electric items (`IElectricItem`) that can actually take a charge at the panel's tier; full or stacked electric items are rejected, matching IC2's charge-slot behavior.
 
-All values are configurable in `config/AdvancedSolarPanel.cfg` under `general`:
-`AdvancedSPGenDay`, `AdvancedSPGenNight`, `AdvancedSPStorage`, `AdvancedSPOutput`, and the
-corresponding `HybrydSP*`, `UltimateHSP*`, and `QuantumSP*` keys.
+Panels use IC2's sky-light classification with graceful ASP output factors: full day is 100%,
+dawn/dusk is 1/4, and night or rain is 1/8. Desert rain is exempt, and blocked sky or a no-sky
+dimension produces nothing. The per-tier `*GenDay` config value is the 100% rate; the other outputs
+scale from it. Fractional EU is accumulated between ticks.
+
+All rates are configurable in `config/AdvancedSolarPanel.cfg` under `general`:
+`AdvancedSPGenDay`, `AdvancedSPStorage`, `AdvancedSPOutput`, and the corresponding
+`HybrydSP*`, `UltimateHSP*`, and `QuantumSP*` keys.
 
 ### Wrench behavior
 
@@ -108,7 +110,7 @@ per-tick cap, so the offered output is `min(production, maxPacketSize)`.
 
 | Section | Examples | Purpose |
 | --- | --- | --- |
-| `general` | `AdvancedSPGenDay`, `HybrydSPOutput`, `QuantumSPStorage`, `solarHelmetLegacyCharging` | Per-tier generation/storage/output and helmet charging mode |
+| `general` | `AdvancedSPGenDay`, `HybrydSPOutput`, `QuantumSPStorage`, `solarHelmetLegacyCharging` | Per-tier output/storage and helmet charging mode |
 | `recipes settings` | `Disable HybridSolarPanel recipe`, `Enable hard recipes` | Recipe toggles |
 | `quantum generator` | `quantumGeneratorDefaultProduction`, `quantumGeneratorDefaultPacketSize` | QGen defaults |
 

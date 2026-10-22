@@ -9,7 +9,6 @@ public class TileEntityUltimateSolarPanel extends TileEntitySolarPanel {
             "blockUltimateSolarPanel.name",
             3,
             AdvancedSolarPanel.uhGenDay,
-            AdvancedSolarPanel.uhGenNight,
             AdvancedSolarPanel.uhOutput,
             AdvancedSolarPanel.uhStorage,
             3);

@@ -78,19 +78,15 @@ public class AdvancedSolarPanel {
     public static Configuration config;
     public static String configFileName;
     public static int advGenDay;
-    public static int advGenNight;
     public static int advStorage;
     public static int advOutput;
     public static int hGenDay;
-    public static int hGenNight;
     public static int hStorage;
     public static int hOutput;
     public static int uhGenDay;
-    public static int uhGenNight;
     public static int uhStorage;
     public static int uhOutput;
     public static int qpGenDay;
-    public static int qpGenNight;
     public static int qpStorage;
     public static int qpOutput;
     public static int qgbaseProduction;
@@ -168,32 +164,24 @@ public class AdvancedSolarPanel {
                 .getAbsolutePath();
             advGenDay = config.get("general", "AdvancedSPGenDay", 8)
                 .getInt(8);
-            advGenNight = config.get("general", "AdvancedSPGenNight", 1)
-                .getInt(1);
             advStorage = config.get("general", "AdvancedSPStorage", 32000)
                 .getInt(32000);
             advOutput = config.get("general", "AdvancedSPOutput", 32)
                 .getInt(32);
             hGenDay = config.get("general", "HybrydSPGenDay", 64)
                 .getInt(64);
-            hGenNight = config.get("general", "HybrydSPGenNight", 8)
-                .getInt(8);
             hStorage = config.get("general", "HybrydSPStorage", 100000)
                 .getInt(100000);
             hOutput = config.get("general", "HybrydSPOutput", 128)
                 .getInt(128);
             uhGenDay = config.get("general", "UltimateHSPGenDay", 512)
                 .getInt(512);
-            uhGenNight = config.get("general", "UltimateHSPGenNight", 64)
-                .getInt(64);
             uhStorage = config.get("general", "UltimateHSPStorage", 1000000)
                 .getInt(1000000);
             uhOutput = config.get("general", "UltimateHSPOutput", 512)
                 .getInt(512);
             qpGenDay = config.get("general", "QuantumSPGenDay", 4096)
                 .getInt(4096);
-            qpGenNight = config.get("general", "QuantumSPGenNight", 2048)
-                .getInt(2048);
             qpStorage = config.get("general", "QuantumSPStorage", 10000000)
                 .getInt(10000000);
             qpOutput = config.get("general", "QuantumSPOutput", 8192)
@@ -232,19 +220,15 @@ public class AdvancedSolarPanel {
                 .getBoolean(false);
 
             advGenDay = clampConfig("AdvancedSPGenDay", advGenDay, 0);
-            advGenNight = clampConfig("AdvancedSPGenNight", advGenNight, 0);
             advStorage = clampConfig("AdvancedSPStorage", advStorage, 1);
             advOutput = clampConfig("AdvancedSPOutput", advOutput, 1);
             hGenDay = clampConfig("HybrydSPGenDay", hGenDay, 0);
-            hGenNight = clampConfig("HybrydSPGenNight", hGenNight, 0);
             hStorage = clampConfig("HybrydSPStorage", hStorage, 1);
             hOutput = clampConfig("HybrydSPOutput", hOutput, 1);
             uhGenDay = clampConfig("UltimateHSPGenDay", uhGenDay, 0);
-            uhGenNight = clampConfig("UltimateHSPGenNight", uhGenNight, 0);
             uhStorage = clampConfig("UltimateHSPStorage", uhStorage, 1);
             uhOutput = clampConfig("UltimateHSPOutput", uhOutput, 1);
             qpGenDay = clampConfig("QuantumSPGenDay", qpGenDay, 0);
-            qpGenNight = clampConfig("QuantumSPGenNight", qpGenNight, 0);
             qpStorage = clampConfig("QuantumSPStorage", qpStorage, 1);
             qpOutput = clampConfig("QuantumSPOutput", qpOutput, 1);
             qgbaseProduction = clampConfig("quantumGeneratorDefaultProduction", qgbaseProduction, 1);

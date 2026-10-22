@@ -16,6 +16,7 @@ import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.util.ForgeDirection;
 
 import com.mrfuzzihead.advancedsolarpanels.common.container.ContainerAdvSolarPanel;
+import com.mrfuzzihead.advancedsolarpanels.utils.SolarMath;
 
 import ic2.api.energy.EnergyNet;
 import ic2.api.energy.event.EnergyTileLoadEvent;
@@ -35,13 +36,12 @@ public class TileEntitySolarPanel extends TileEntityBase
     public int ticker;
     public int generating;
     public int genDay;
-    public int genNight;
     public boolean initialized;
     public boolean sunIsUp;
     public boolean skyIsVisible;
+    public double generationFactor;
+    private double generationRemainder;
     private short facing;
-    private boolean noSunWorld;
-    private boolean wetBiome;
     private int machineTire;
     public boolean addedToEnergyNet;
     private boolean created;
@@ -58,17 +58,15 @@ public class TileEntitySolarPanel extends TileEntityBase
     public boolean loaded = false;
     private static List<String> fields = Arrays.asList();
 
-    public TileEntitySolarPanel(String gName, int typeSolar, int gDay, int gNight, int gOutput, int gmaxStorage) {
-        this(gName, typeSolar, gDay, gNight, gOutput, gmaxStorage, 1);
+    public TileEntitySolarPanel(String gName, int typeSolar, int gDay, int gOutput, int gmaxStorage) {
+        this(gName, typeSolar, gDay, gOutput, gmaxStorage, 1);
     }
 
-    public TileEntitySolarPanel(String gName, int typeSolar, int gDay, int gNight, int gOutput, int gmaxStorage,
-        int tier) {
+    public TileEntitySolarPanel(String gName, int typeSolar, int gDay, int gOutput, int gmaxStorage, int tier) {
         this.created = false;
         this.facing = 2;
         this.solarType = typeSolar;
         this.genDay = gDay;
-        this.genNight = gNight;
         this.storage = 0;
         this.panelName = gName;
         this.sunIsUp = false;
@@ -127,10 +125,6 @@ public class TileEntitySolarPanel extends TileEntityBase
     }
 
     public void intialize() {
-        this.wetBiome = this.worldObj.getWorldChunkManager()
-            .getBiomeGenAt(this.xCoord, this.zCoord)
-            .getIntRainfall() > 0;
-        this.noSunWorld = this.worldObj.provider.hasNoSky;
         this.updateVisibility();
         this.initialized = true;
         if (!this.addedToEnergyNet) {
@@ -186,36 +180,24 @@ public class TileEntitySolarPanel extends TileEntityBase
             this.updateVisibility();
         }
 
-        if (this.sunIsUp && this.skyIsVisible) {
-            this.generating = 0 + this.genDay;
-            return this.generating;
-        } else if (this.skyIsVisible) {
-            this.generating = 0 + this.genNight;
-            return this.generating;
-        } else {
-            this.generating = 0;
-            return this.generating;
-        }
+        double raw = this.genDay * this.generationFactor + this.generationRemainder;
+        int whole = (int) Math.floor(raw);
+        this.generationRemainder = raw - whole;
+        this.generating = whole;
+        this.active = whole > 0;
+        return whole;
     }
 
     public void updateVisibility() {
-        Boolean rainWeather = this.wetBiome && (this.worldObj.isRaining() || this.worldObj.isThundering());
-        if (this.worldObj.isDaytime() && !rainWeather) {
-            this.sunIsUp = true;
-        } else {
-            this.sunIsUp = false;
-        }
-
-        if (this.worldObj.canBlockSeeTheSky(this.xCoord, this.yCoord + 1, this.zCoord) && !this.noSunWorld) {
-            this.skyIsVisible = true;
-        } else {
-            this.skyIsVisible = false;
-        }
+        this.generationFactor = SolarMath.generationFactor(worldObj, xCoord, yCoord, zCoord);
+        this.sunIsUp = this.generationFactor >= 1.0D;
+        this.skyIsVisible = this.generationFactor > 0.0D;
     }
 
     public void readFromNBT(NBTTagCompound nbttagcompound) {
         super.readFromNBT(nbttagcompound);
         this.storage = Math.max(0, Math.min(nbttagcompound.getInteger("storage"), Math.max(1, this.maxStorage)));
+        this.generationRemainder = Math.max(0.0D, Math.min(1.0D, nbttagcompound.getDouble("generationRemainder")));
         this.lastX = nbttagcompound.getInteger("lastX");
         this.lastY = nbttagcompound.getInteger("lastY");
         this.lastZ = nbttagcompound.getInteger("lastZ");
@@ -235,6 +217,7 @@ public class TileEntitySolarPanel extends TileEntityBase
         super.writeToNBT(nbttagcompound);
         NBTTagList nbttaglist = new NBTTagList();
         nbttagcompound.setInteger("storage", this.storage);
+        nbttagcompound.setDouble("generationRemainder", this.generationRemainder);
         nbttagcompound.setInteger("lastX", this.lastX);
         nbttagcompound.setInteger("lastY", this.lastY);
         nbttagcompound.setInteger("lastZ", this.lastZ);

@@ -11,7 +11,7 @@
 
 **Method:** static review of 45 Java files (~5,000 lines), resource/lang audit, source/metadata validation, build check, `NAMESPACE_CHANGE.md` verification, decompiled IC2/upstream comparison, and a formula-level simulation of the 1.7.10 sun/light math.
 
-> **First-batch fixes implemented after this review:** the NEI compile dependency was corrected, the MT Core reflector recipe now uses a fresh stack, packets are scheduled onto the game thread (server task queue + client task scheduler), `Thread.getAllStackTraces()` was removed, the MT GUI recipe-index crash and static caption leak were fixed, MT recipes are validated (non-negative energy, 1–64 stack sizes), the MT energy buffer/progress is persisted and capped, `getDemandedEnergy` accounts for buffered energy, output-blocked injection is rejected, metadata/config/divide-by-zero/NPE guards were added, panel charge slots now use IC2-style simulated charge acceptance (electric, not full, not stacked), panel drops now use IC2’s wrench/casing behavior, `modId`/`modName` metadata now match `@Mod`, metal block sounds were set on the machines, and a 44-test JUnit baseline was added (`./gradlew build` passes).
+> **First-batch fixes implemented after this review:** the NEI compile dependency was corrected, the MT Core reflector recipe now uses a fresh stack, packets are scheduled onto the game thread (server task queue + client task scheduler), `Thread.getAllStackTraces()` was removed, the MT GUI recipe-index crash and static caption leak were fixed, MT recipes are validated (non-negative energy, 1–64 stack sizes), the MT energy buffer/progress is persisted and capped, `getDemandedEnergy` accounts for buffered energy, output-blocked injection is rejected, metadata/config/divide-by-zero/NPE guards were added, panel charge slots now use IC2-style simulated charge acceptance (electric, not full, not stacked), panel drops now use IC2’s wrench/casing behavior, `modId`/`modName` metadata now match `@Mod`, metal block sounds were set on the machines, and a 49-test JUnit baseline was added (`./gradlew build` passes).
 >
 >
 > **Second-batch changes implemented:** real panel source/charge tiers (1/2/3/5), MT sink tier EV (4),
@@ -20,8 +20,9 @@
 > range fixes, QGen max-packet cap / GUI layout / redstone indicator / shift-click cleanup, and solar
 > helmet parity (stateless IC2 sun visibility, panel tiers, tooltip, inventory sync) plus the new
 > helmet charging modes (chest-first/self-overflow by default, legacy all-armor/inventory via config)
-> and graceful light scaling (full day, 1/4 dawn/dusk, 1/8 night/rain). Solar *panel* generation rules
-> remain deferred.
+> and graceful light scaling (full day, 1/4 dawn/dusk, 1/8 night/rain). Panels now use the same
+> graceful scaling, fixed factors instead of the removed `*GenNight` config, fractional EU
+> accumulation, active state, and panel tooltips.
 >
 > The line references below were captured before the Spotless formatting pass; use the class/method names and paths as the authoritative anchors.
 
@@ -316,7 +317,7 @@ names and existing worlds.
 
 ### 2.2 S2 — Gameplay and IC2-parity bugs
 
-#### B12. Panels do not use IC2’s sun/light rules
+#### B12. (Fixed) Panels did not use IC2’s sun/light rules
 
 IC2 (`TileEntitySolarGenerator`):
 
@@ -365,10 +366,9 @@ Consequences:
 - ASP refreshes visibility every 128 ticks and on load; IC2 does the same tick rate and refreshes on
   load. Both can be stale for up to 6.4 s at a transition.
 
-**Parity recommendation:** add a config option (`useIC2SolarRules`, default false to preserve ASP
-behavior or true for parity). Implement IC2’s predicate and linear scaling with a `double` storage
-or fractional accumulator. Keep `genNight` behind a separate `nightGeneration` option (default
-upstream behavior) so players can choose.
+**Fix applied:** panels now use `SolarMath` sky-light classification with ASP's graceful factors
+(full day 100%, dawn/dusk 1/4, night/rain 1/8), fractional-EU accumulation, active state, and
+tooltips. The obsolete `*GenNight` config keys were removed; the `*GenDay` value is the 100% rate.
 
 #### B13. (Fixed) Energy source tier was `Integer.MAX_VALUE` instead of the panel tier
 
@@ -786,10 +786,9 @@ recognizable:
 - wrench/charge/harvest behavior consistent with IC2;
 - active state and GUI information that match the actual machine state.
 
-A config switch is the safest way to preserve upstream behavior while offering parity:
-`general.useIC2SolarRules=false` (default) and `general.nightGeneration=true` (default) with a
-`/config` comment explaining the difference. That way existing packs keep 8/1 night behavior, and
-parity packs can set `true/false`.
+**Implemented:** panels use IC2's sky-light classification with ASP's graceful factors—100% full
+day, 1/4 dawn/dusk, 1/8 night/rain—plus fractional accumulation. The old `*GenNight` config keys were
+removed; `*GenDay` is the 100% rate.
 
 ---
 
@@ -808,10 +807,9 @@ parity packs can set `true/false`.
    tier, source tier, wrench parity, MT sink tier, QGen caps, recipe toggles. Replace the 12
    private booleans with a small `RecipeConfig`/`BalanceConfig`.
 7. **IC2-parity option** for panels and helmets:
-   - `useIC2SolarRules` (sky light >4, linear scaling, desert/rain predicate, double storage);
-   - `nightGeneration` (default true; false for strict IC2);
-   - `chargeTier`/`chargeTarget` for panels/helmets;
-   - `sourceTierMode = auto|fixed` and validate output vs tier.
+   - panels now use graceful sky-light factors and real tiers;
+   - helmets expose `solarHelmetLegacyCharging` for the original all-armor behavior;
+   - remaining: configurable charge-tier details if needed.
 8. **API compatibility:** expose `IMTRecipeManager` methods for `add`, `remove`, `clear`, `get`
    (immutable view), initialize `MTAPI.manager` in preInit, and document load order. Add deprecated
    `advsolar.*` shims for GT5/NHCoreMod if GTNH compatibility is a goal.
@@ -1194,7 +1192,7 @@ already delegates to the GTNH reusable workflow.
 
 ### Phase 1 — IC2 parity and gameplay
 
-8. Add `SolarMath` + `SolarTier`; add `useIC2SolarRules`/`nightGeneration` config.
+8. Add `SolarMath` + `SolarTier`; implement graceful panel light factors (done).
 9. Replace MAX source/charge/sink tiers with real tiers; validate output vs tier.
 10. Fix QGen max-packet/redstone/GUI/bounds; add a real packet-size UI or remove the feature.
 11. Fix helmet per-stack state, charge target/tier, inventory sync, tooltip.
@@ -1235,10 +1233,10 @@ $ ./gradlew build --offline
 BUILD SUCCESSFUL
 ```
 
-The test baseline currently has 44 passing tests across ten classes:
-`SolarPanelGenerationTest`, `SolarTierTest`, `SolarMathTest`, `HelmetRulesTest`, `HelmetItemTest`,
-`MTRecipeValidationTest`, `MolecularTransformerLogicTest`, `NetworkTaskTest`, `SlotElectricItemTest`, and
-`NamespaceResourceTest`.
+The test baseline currently has 49 passing tests across eleven classes:
+`SolarPanelGenerationTest`, `PanelTooltipTest`, `SolarTierTest`, `SolarMathTest`, `HelmetRulesTest`,
+`HelmetItemTest`, `MTRecipeValidationTest`, `MolecularTransformerLogicTest`, `NetworkTaskTest`,
+`SlotElectricItemTest`, and `NamespaceResourceTest`.
 
 ### 9.2 Upstream/IC2 files decompiled for this review
 
