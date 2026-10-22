@@ -57,9 +57,9 @@ Generation uses ASP's graceful sky-light scaling rather than IC2's binary on/off
 | Condition | Output |
 | --- | ---: |
 | Full day | 100% |
-| Dawn/dusk | 2/3 |
-| Night | 1/3 |
-| Rain/thunder in a non-desert biome | 1/3 |
+| Dawn/dusk | 1/4 |
+| Night | 1/8 |
+| Rain/thunder in a non-desert biome | 1/8 |
 | Blocked sky or no-sky dimension | 0 |
 
 Deserts ignore the rain penalty, matching IC2. The Hybrid and Ultimate helmets also consume 1,000 EU

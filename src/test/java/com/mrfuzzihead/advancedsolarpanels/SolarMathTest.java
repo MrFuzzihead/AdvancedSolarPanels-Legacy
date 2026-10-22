@@ -28,9 +28,9 @@ class SolarMathTest {
         assertEquals(0.0D, SolarMath.generationFactor(15, true, true, false, false, false), 0.0D);
         assertEquals(0.0D, SolarMath.generationFactor(15, false, false, false, false, false), 0.0D);
         assertEquals(1.0D, SolarMath.generationFactor(15, false, true, false, false, false), 0.0D);
-        assertEquals(2.0D / 3.0D, SolarMath.generationFactor(11, false, true, false, false, false), 0.0D);
-        assertEquals(1.0D / 3.0D, SolarMath.generationFactor(4, false, true, false, false, false), 0.0D);
-        assertEquals(1.0D / 3.0D, SolarMath.generationFactor(15, false, true, true, false, false), 0.0D);
+        assertEquals(1.0D / 4.0D, SolarMath.generationFactor(11, false, true, false, false, false), 0.0D);
+        assertEquals(1.0D / 8.0D, SolarMath.generationFactor(4, false, true, false, false, false), 0.0D);
+        assertEquals(1.0D / 8.0D, SolarMath.generationFactor(15, false, true, true, false, false), 0.0D);
         assertEquals(1.0D, SolarMath.generationFactor(15, false, true, true, false, true), 0.0D);
     }
 

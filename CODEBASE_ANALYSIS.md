@@ -20,7 +20,7 @@
 > range fixes, QGen max-packet cap / GUI layout / redstone indicator / shift-click cleanup, and solar
 > helmet parity (stateless IC2 sun visibility, panel tiers, tooltip, inventory sync) plus the new
 > helmet charging modes (chest-first/self-overflow by default, legacy all-armor/inventory via config)
-> and graceful light scaling (full day, 2/3 dawn/dusk, 1/3 night/rain). Solar *panel* generation rules
+> and graceful light scaling (full day, 1/4 dawn/dusk, 1/8 night/rain). Solar *panel* generation rules
 > remain deferred.
 >
 > The line references below were captured before the Spotless formatting pass; use the class/method names and paths as the authoritative anchors.

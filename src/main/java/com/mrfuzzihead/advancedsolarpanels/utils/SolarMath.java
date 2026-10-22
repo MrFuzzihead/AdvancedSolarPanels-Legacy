@@ -8,9 +8,9 @@ public final class SolarMath {
 
     /** IC2 solar generators require at least this top-of-world sky light value. */
     public static final int MIN_SKY_LIGHT = 5;
-    public static final double DAWN_DUSK_FACTOR = 2.0D / 3.0D;
-    public static final double NIGHT_FACTOR = 1.0D / 3.0D;
-    public static final double RAIN_FACTOR = 1.0D / 3.0D;
+    public static final double DAWN_DUSK_FACTOR = 1.0D / 4.0D;
+    public static final double NIGHT_FACTOR = 1.0D / 8.0D;
+    public static final double RAIN_FACTOR = 1.0D / 8.0D;
 
     private SolarMath() {}
 
@@ -38,8 +38,8 @@ public final class SolarMath {
     }
 
     /**
-     * ASP's graceful light/weather scaling. Full day is 100%, dawn/dusk is 2/3, and night or bad
-     * weather is 1/3. Blocked sky or a no-sky dimension is still 0.
+     * ASP's graceful light/weather scaling. Full day is 100%, dawn/dusk is 1/4, and night or bad
+     * weather is 1/8. Blocked sky or a no-sky dimension is still 0.
      */
     public static double generationFactor(World world, int x, int y, int z) {
         return generationFactor(
