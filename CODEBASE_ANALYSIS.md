@@ -11,7 +11,7 @@
 
 **Method:** static review of 45 Java files (~5,000 lines), resource/lang audit, source/metadata validation, build check, `NAMESPACE_CHANGE.md` verification, decompiled IC2/upstream comparison, and a formula-level simulation of the 1.7.10 sun/light math.
 
-> **First-batch fixes implemented after this review:** the NEI compile dependency was corrected, the MT Core reflector recipe now uses a fresh stack, packets are scheduled onto the game thread (server task queue + client task scheduler), `Thread.getAllStackTraces()` was removed, the MT GUI recipe-index crash and static caption leak were fixed, MT recipes are validated (non-negative energy, 1–64 stack sizes), the MT energy buffer/progress is persisted and capped, `getDemandedEnergy` accounts for buffered energy, output-blocked injection is rejected, metadata/config/divide-by-zero/NPE guards were added, panel charge slots now use IC2-style simulated charge acceptance (electric, not full, not stacked), panel drops now use IC2’s wrench/casing behavior, `modId`/`modName` metadata now match `@Mod`, metal block sounds were set on the machines, and a 49-test JUnit baseline was added (`./gradlew build` passes).
+> **First-batch fixes implemented after this review:** the NEI compile dependency was corrected, the MT Core reflector recipe now uses a fresh stack, packets are scheduled onto the game thread (server task queue + client task scheduler), `Thread.getAllStackTraces()` was removed, the MT GUI recipe-index crash and static caption leak were fixed, MT recipes are validated (non-negative energy, 1–64 stack sizes), the MT energy buffer/progress is persisted and capped, `getDemandedEnergy` accounts for buffered energy, output-blocked injection is rejected, metadata/config/divide-by-zero/NPE guards were added, panel charge slots now use IC2-style simulated charge acceptance (electric, not full, not stacked), panel drops now use IC2’s wrench/casing behavior, `modId`/`modName` metadata now match `@Mod`, metal block sounds were set on the machines, and a 50-test JUnit baseline was added (`./gradlew build` passes).
 >
 >
 > **Second-batch changes implemented:** real panel source/charge tiers (1/2/3/5), MT sink tier EV (4),
@@ -20,7 +20,7 @@
 > range fixes, QGen max-packet cap / GUI layout / redstone indicator / shift-click cleanup, and solar
 > helmet parity (stateless IC2 sun visibility, panel tiers, tooltip, inventory sync) plus the new
 > helmet charging modes (chest-first/self-overflow by default, legacy all-armor/inventory via config)
-> and graceful light scaling (full day, 1/4 dawn/dusk, 1/8 night/rain). Panels now use the same
+> and graceful light scaling (clear: 1 / 1/4 / 1/8; rain: 1/4 / 1/8 / 0; thunder: 1/8 day, 0 otherwise). Panels now use the same
 > graceful scaling, fixed factors instead of the removed `*GenNight` config, fractional EU
 > accumulation, active state, and panel tooltips.
 >
@@ -787,7 +787,8 @@ recognizable:
 - active state and GUI information that match the actual machine state.
 
 **Implemented:** panels use IC2's sky-light classification with ASP's graceful factors—100% full
-day, 1/4 dawn/dusk, 1/8 night/rain—plus fractional accumulation. The old `*GenNight` config keys were
+day, 1/4 dawn/dusk, 1/8 night; rain 1/4 day, 1/8 dawn/dusk, 0 night; thunder 1/8 day only—plus
+fractional accumulation. The old `*GenNight` config keys were
 removed; `*GenDay` is the 100% rate.
 
 ---
@@ -1233,7 +1234,7 @@ $ ./gradlew build --offline
 BUILD SUCCESSFUL
 ```
 
-The test baseline currently has 49 passing tests across eleven classes:
+The test baseline currently has 50 passing tests across eleven classes:
 `SolarPanelGenerationTest`, `PanelTooltipTest`, `SolarTierTest`, `SolarMathTest`, `HelmetRulesTest`,
 `HelmetItemTest`, `MTRecipeValidationTest`, `MolecularTransformerLogicTest`, `NetworkTaskTest`,
 `SlotElectricItemTest`, and `NamespaceResourceTest`.

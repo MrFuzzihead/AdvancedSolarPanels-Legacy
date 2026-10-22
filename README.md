@@ -24,10 +24,25 @@ upgraded solar panels, solar helmets, a Molecular Transformer, and an admin-only
 Each panel has four charge slots and can charge electric items while it generates. The slots accept only
 IC2 electric items (`IElectricItem`) that can actually take a charge at the panel's tier; full or stacked electric items are rejected, matching IC2's charge-slot behavior.
 
-Panels use IC2's sky-light classification with graceful ASP output factors: full day is 100%,
-dawn/dusk is 1/4, and night or rain is 1/8. Desert rain is exempt, and blocked sky or a no-sky
-dimension produces nothing. The per-tier `*GenDay` config value is the 100% rate; the other outputs
-scale from it. Fractional EU is accumulated between ticks.
+Panels use IC2's sky-light classification with graceful ASP output factors. The per-tier `*GenDay`
+config value is the 100% rate; the other outputs scale from it. Fractional EU is accumulated between
+ticks.
+
+| Condition | Output |
+| --- | ---: |
+| Clear full day | 100% |
+| Clear dawn/dusk | 1/4 |
+| Clear night | 1/8 |
+| Rain, day | 1/4 |
+| Rain, dawn/dusk | 1/8 |
+| Rain, night | 0 |
+| Thunder, day | 1/8 |
+| Thunder, dawn/dusk/night | 0 |
+| Desert | Weather is ignored; clear-weather factors apply |
+| Blocked sky / no-sky dimension | 0 |
+
+Thunder takes precedence over rain if both are active. The phase is based on the time-of-day sky
+light, not the weather-darkened light level.
 
 All rates are configurable in `config/AdvancedSolarPanel.cfg` under `general`:
 `AdvancedSPGenDay`, `AdvancedSPStorage`, `AdvancedSPOutput`, and the corresponding
@@ -54,17 +69,9 @@ They sync the player inventory after charging. Setting `general.solarHelmetLegac
 restores the original ASP behavior: charge all armor slots (including the helmet) and then the main
 inventory, using the original tier/transfer-limit rules.
 
-Generation uses ASP's graceful sky-light scaling rather than IC2's binary on/off rule:
+Helmets use the same weather/light factor table as the panels.
 
-| Condition | Output |
-| --- | ---: |
-| Full day | 100% |
-| Dawn/dusk | 1/4 |
-| Night | 1/8 |
-| Rain/thunder in a non-desert biome | 1/8 |
-| Blocked sky or no-sky dimension | 0 |
-
-Deserts ignore the rain penalty, matching IC2. The Hybrid and Ultimate helmets also consume 1,000 EU
+Deserts ignore the weather penalty, matching IC2. The Hybrid and Ultimate helmets also consume 1,000 EU
 from their own internal buffer to replenish underwater air. Helmet tiers match their corresponding
 panel tiers, and the tooltip shows the charge rate, tier, and description. Helmet recipes use the
 matching solar panel and the IC2 nano/quantum helmet.

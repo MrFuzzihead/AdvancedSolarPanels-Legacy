@@ -24,14 +24,25 @@ class SolarMathTest {
     }
 
     @Test
-    void gracefulGenerationFactors() {
+    void gracefulClearWeatherFactors() {
         assertEquals(0.0D, SolarMath.generationFactor(15, true, true, false, false, false), 0.0D);
         assertEquals(0.0D, SolarMath.generationFactor(15, false, false, false, false, false), 0.0D);
         assertEquals(1.0D, SolarMath.generationFactor(15, false, true, false, false, false), 0.0D);
         assertEquals(1.0D / 4.0D, SolarMath.generationFactor(11, false, true, false, false, false), 0.0D);
         assertEquals(1.0D / 8.0D, SolarMath.generationFactor(4, false, true, false, false, false), 0.0D);
-        assertEquals(1.0D / 8.0D, SolarMath.generationFactor(15, false, true, true, false, false), 0.0D);
+    }
+
+    @Test
+    void gracefulRainFactors() {
+        assertEquals(1.0D / 4.0D, SolarMath.generationFactor(15, false, true, true, false, false), 0.0D);
+        assertEquals(1.0D / 8.0D, SolarMath.generationFactor(11, false, true, true, false, false), 0.0D);
+        assertEquals(0.0D, SolarMath.generationFactor(4, false, true, true, false, false), 0.0D);
         assertEquals(1.0D, SolarMath.generationFactor(15, false, true, true, false, true), 0.0D);
+
+        assertEquals(1.0D / 8.0D, SolarMath.generationFactor(15, false, true, false, true, false), 0.0D);
+        assertEquals(0.0D, SolarMath.generationFactor(11, false, true, false, true, false), 0.0D);
+        assertEquals(0.0D, SolarMath.generationFactor(4, false, true, false, true, false), 0.0D);
+        assertEquals(1.0D, SolarMath.generationFactor(15, false, true, false, true, true), 0.0D);
     }
 
     @Test
