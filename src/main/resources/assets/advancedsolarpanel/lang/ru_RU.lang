@@ -32,3 +32,5 @@ gui.MolecularTransformer.energyPerOperation=Энергия
 gui.MolecularTransformer.progress=Прогресс
 gui.QuantumGenerator.power=Выход
 gui.QuantumGenerator.packet=Макс. пакет
+item.advancedSolarHelmet.desc=Заряжает нагрудник на солнечном свету.
+item.advancedSolarHelmet.air=Также восполняет запас воздуха под водой.

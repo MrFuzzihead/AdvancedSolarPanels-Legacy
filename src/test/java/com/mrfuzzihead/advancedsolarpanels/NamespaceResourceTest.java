@@ -56,6 +56,16 @@ class NamespaceResourceTest {
     }
 
     @Test
+    void helmetTooltipKeysExist() throws IOException {
+        Set<String> keys = readKeys(LANG.resolve("en_US.lang"));
+        assertTrue(keys.contains("item.advancedSolarHelmet.desc"));
+        assertTrue(keys.contains("item.advancedSolarHelmet.air"));
+        assertTrue(keys.contains("item.advancedSolarHelmet.name"));
+        assertTrue(keys.contains("item.hybridSolarHelmet.name"));
+        assertTrue(keys.contains("item.ultimateSolarHelmet.name"));
+    }
+
+    @Test
     void everyLanguageKeyIsNonEmpty() throws IOException {
         for (Path file : new Path[] { LANG.resolve("en_US.lang"), LANG.resolve("ru_RU.lang") }) {
             for (String line : Files.readAllLines(file, StandardCharsets.UTF_8)) {

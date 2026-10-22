@@ -4,27 +4,26 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
 
-import com.mrfuzzihead.advancedsolarpanels.common.tiles.TileEntitySolarPanel;
+import com.mrfuzzihead.advancedsolarpanels.common.tiles.TileEntityAdvancedSolarPanel;
+import com.mrfuzzihead.advancedsolarpanels.common.tiles.TileEntityHybridSolarPanel;
+import com.mrfuzzihead.advancedsolarpanels.common.tiles.TileEntityQuantumSolarPanel;
+import com.mrfuzzihead.advancedsolarpanels.common.tiles.TileEntityUltimateSolarPanel;
 
 class SolarTierTest {
 
     @Test
     void panelTiersMatchTheirPacketSizes() {
-        assertEquals(1, panel(1).getSourceTier());
-        assertEquals(2, panel(2).getSourceTier());
-        assertEquals(3, panel(3).getSourceTier());
-        assertEquals(5, panel(5).getSourceTier());
+        assertEquals(1, new TileEntityAdvancedSolarPanel().getSourceTier());
+        assertEquals(2, new TileEntityHybridSolarPanel().getSourceTier());
+        assertEquals(3, new TileEntityUltimateSolarPanel().getSourceTier());
+        assertEquals(5, new TileEntityQuantumSolarPanel().getSourceTier());
     }
 
     @Test
     void chargeTierMatchesSourceTier() {
-        assertEquals(1, panel(1).getChargeTier());
-        assertEquals(2, panel(2).getChargeTier());
-        assertEquals(3, panel(3).getChargeTier());
-        assertEquals(5, panel(5).getChargeTier());
-    }
-
-    private static TileEntitySolarPanel panel(int tier) {
-        return new TileEntitySolarPanel("test", 0, 8, 1, 32, 32_000, tier);
+        assertEquals(1, new TileEntityAdvancedSolarPanel().getChargeTier());
+        assertEquals(2, new TileEntityHybridSolarPanel().getChargeTier());
+        assertEquals(3, new TileEntityUltimateSolarPanel().getChargeTier());
+        assertEquals(5, new TileEntityQuantumSolarPanel().getChargeTier());
     }
 }

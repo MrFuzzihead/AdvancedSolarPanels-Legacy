@@ -40,15 +40,19 @@ separately. Use a wrench if you want the panel itself back.
 
 ## Solar helmets
 
-| Helmet | Day/night generation | Max charge | Transfer limit | Tier | Air supply |
+| Helmet | Sunlight charge | Max charge | Helmet transfer limit | Tier | Air supply |
 | --- | ---: | ---: | ---: | ---: | --- |
-| Advanced Solar Helmet | 8 / 1 EU/t | 1,000,000 EU | 3,000 EU/t | 3 | No |
-| Hybrid Solar Helmet | 64 / 8 EU/t | 10,000,000 EU | 10,000 EU/t | 4 | Yes |
-| Ultimate Solar Helmet | 512 / 64 EU/t | 10,000,000 EU | 10,000 EU/t | 4 | Yes |
+| Advanced Solar Helmet | 8 EU/t | 1,000,000 EU | 3,000 EU/t | 1 | No |
+| Hybrid Solar Helmet | 64 EU/t | 10,000,000 EU | 10,000 EU/t | 2 | Yes |
+| Ultimate Solar Helmet | 512 EU/t | 10,000,000 EU | 10,000 EU/t | 3 | Yes |
 
-The helmets charge electric items in the player's armor and main inventory while the player is in
-sunlight. The Hybrid and Ultimate helmets also consume 1,000 EU to replenish air when the player is
-underwater. Helmet recipes use the matching solar panel and the IC2 nano/quantum helmet.
+The helmets follow IC2's solar-helmet model: they charge **only the chestplate**, accept **any tier**,
+ignore the chestplate's transfer limit, and sync the player inventory after charging. They charge
+only when IC2's solar visibility predicate is true; unlike the panels, they do **not** generate at
+night or in rain. The Hybrid and Ultimate helmets also consume 1,000 EU from their own internal
+buffer to replenish underwater air. Helmet tiers match their corresponding panel tiers, and the
+tooltip shows the charge rate, tier, and description. Helmet recipes use the matching solar panel and
+the IC2 nano/quantum helmet.
 
 ## Molecular Transformer
 
@@ -109,8 +113,9 @@ Gradle.
 ./gradlew runServer    # development server
 ```
 
-Built jars are placed in `build/libs/`. The current test suite covers solar generation math, MT recipe
-validation, MT energy-buffer behavior, and namespace/lang resource invariants.
+Built jars are placed in `build/libs/`. The current test suite covers solar generation math, helmet
+tiers/charge rules/tooltips, MT recipe validation and OreDict/index matching, MT energy-buffer
+behavior, container/slot rules, and namespace/lang resource invariants.
 
 ## Compatibility notes
 

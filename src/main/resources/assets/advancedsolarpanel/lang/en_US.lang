@@ -32,3 +32,5 @@ gui.MolecularTransformer.energyPerOperation=Energy
 gui.MolecularTransformer.progress=Progress
 gui.QuantumGenerator.power=Power
 gui.QuantumGenerator.packet=Max Packet
+item.advancedSolarHelmet.desc=Charges the chestplate while in sunlight.
+item.advancedSolarHelmet.air=Also replenishes underwater air.

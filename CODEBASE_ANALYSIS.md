@@ -11,14 +11,15 @@
 
 **Method:** static review of 45 Java files (~5,000 lines), resource/lang audit, source/metadata validation, build check, `NAMESPACE_CHANGE.md` verification, decompiled IC2/upstream comparison, and a formula-level simulation of the 1.7.10 sun/light math.
 
-> **First-batch fixes implemented after this review:** the NEI compile dependency was corrected, the MT Core reflector recipe now uses a fresh stack, packets are scheduled onto the game thread (server task queue + client task scheduler), `Thread.getAllStackTraces()` was removed, the MT GUI recipe-index crash and static caption leak were fixed, MT recipes are validated (non-negative energy, 1–64 stack sizes), the MT energy buffer/progress is persisted and capped, `getDemandedEnergy` accounts for buffered energy, output-blocked injection is rejected, metadata/config/divide-by-zero/NPE guards were added, panel charge slots now use IC2-style simulated charge acceptance (electric, not full, not stacked), panel drops now use IC2’s wrench/casing behavior, `modId`/`modName` metadata now match `@Mod`, metal block sounds were set on the machines, and a 33-test JUnit baseline was added (`./gradlew build` passes).
+> **First-batch fixes implemented after this review:** the NEI compile dependency was corrected, the MT Core reflector recipe now uses a fresh stack, packets are scheduled onto the game thread (server task queue + client task scheduler), `Thread.getAllStackTraces()` was removed, the MT GUI recipe-index crash and static caption leak were fixed, MT recipes are validated (non-negative energy, 1–64 stack sizes), the MT energy buffer/progress is persisted and capped, `getDemandedEnergy` accounts for buffered energy, output-blocked injection is rejected, metadata/config/divide-by-zero/NPE guards were added, panel charge slots now use IC2-style simulated charge acceptance (electric, not full, not stacked), panel drops now use IC2’s wrench/casing behavior, `modId`/`modName` metadata now match `@Mod`, metal block sounds were set on the machines, and a 43-test JUnit baseline was added (`./gradlew build` passes).
 >
 >
 > **Second-batch changes implemented:** real panel source/charge tiers (1/2/3/5), MT sink tier EV (4),
 > MT GUI recipe data sync via description packets, MT recipe indexing and NBT-aware matching,
 > dynamic ore-dictionary input matching, container change-only sync, panel shift-click validation and
-> range fixes, and QGen max-packet cap / GUI layout / redstone indicator / shift-click cleanup.
-> Solar/helmet parity was deferred by request.
+> range fixes, QGen max-packet cap / GUI layout / redstone indicator / shift-click cleanup, and solar
+> helmet parity (chest-only, any tier, ignore transfer limit, stateless IC2 sun visibility, panel
+> tiers, tooltip, inventory sync). Solar generation rules remain deferred.
 >
 > The line references below were captured before the Spotless formatting pass; use the class/method names and paths as the authoritative anchors.
 
@@ -408,7 +409,7 @@ first drop, and IC2’s wrench replaces that first drop with the panel on a succ
 breaks therefore return a casing; a failed wrench roll also returns a casing. Charge-slot contents
 are dropped separately by `breakBlock`.
 
-#### B16. Helmet generation state is shared across all helmets of the same tier
+#### B16. (Fixed) Helmet generation state was shared across all helmets of the same tier
 
 `ItemAdvancedSolarHelmet` (`:26-41`, `:86-157`) stores `ticker`, `generating`, `sunIsUp`,
 `skyIsVisible`, `wetBiome`, `noSunWorld` on the `Item` singleton, not on the `ItemStack` or player.
@@ -418,10 +419,10 @@ shared visibility fields. With two players wearing the same helmet tier:
 - the visibility refresh happens every `128 / numberOfWearers` ticks per player, and
 - one player’s `sunIsUp`/`skyIsVisible` can be used to charge another player’s items.
 
-**Fix:** compute visibility per tick from the player (cheap enough) or store a per-stack NBT
-cooldown. Do not keep per-player state on the Item instance.
+**Fix applied:** the helmet is now stateless. It computes `SolarMath.isSunVisible` from the wearer's
+position every tick and no longer stores ticker/visibility/build-up state on the Item singleton.
 
-#### B17. Helmet charging model differs from IC2 and can self-charge
+#### B17. (Fixed) Helmet charging model differed from IC2 and could self-charge
 
 - ASP charges all armor slots (including the helmet itself) and then the whole main inventory.
   IC2’s solar helmet charges only the chestplate (`armorInventory[2]`).
@@ -431,9 +432,10 @@ cooldown. Do not keep per-player state on the Item instance.
   energy buffer rather than armor support. If a chestplate is present it is charged first, so this
   is not always visible, but it is still a deviation.
 
-**Fix:** decide the intended behavior and expose it: `chargeTarget = chest|armor|inventory`,
-`chargeTier`, `ignoreTransferLimit`. For IC2 parity: chest-only, any tier, ignore transfer limit,
-and no self-charge. Keep the array-rate output and air supply behind options.
+**Fix applied:** helmets now charge only `armorInventory[2]`, use `Integer.MAX_VALUE` tier, ignore
+the chestplate transfer limit, and call `detectAndSendChanges()` after a successful charge. The
+helmet's own absorption/durability and Hybrid/Ultimate air supply remain ASP features; the helmet
+must be charged externally for air supply.
 
 #### B18. (Fixed) Quantum Generator `maxPacketSize` was dead in the output path
 
@@ -520,7 +522,8 @@ use `getDistanceSq(...) <= 64.0` (8 blocks). `TileEntityQGenerator` correctly us
 
 - `GuiQGenerator` / `GuiMolecularTransformer` / containers use hard-coded “Power/Input/Output/
   Energy/Progress” text; `NEI` uses hard-coded English; `getInventoryName()` is hard-coded.
-- Panels, the MT, the QGen, and helmets have no `addInformation` tooltips. IC2’s solar panel shows
+- Helmet tooltips are now implemented with IC2's `PowerOutput`, `PowerTier`, and `max` keys plus a
+  description and air-supply line. Panels, the MT, and the QGen still lack full tooltips. IC2’s solar panel shows
   `Power Output: 8 EU/t max`; ASP should show day/night output, storage, tier, charge tier, and
   current status.
 - `tile.AdvancedSolarPanel.name=New Solar Panel` is dead because the blocks never call
@@ -1230,9 +1233,10 @@ $ ./gradlew build --offline
 BUILD SUCCESSFUL
 ```
 
-The test baseline currently has 33 passing tests across seven classes:
-`SolarPanelGenerationTest`, `SolarTierTest`, `MTRecipeValidationTest`, `MolecularTransformerLogicTest`,
-`NetworkTaskTest`, `SlotElectricItemTest`, and `NamespaceResourceTest`.
+The test baseline currently has 43 passing tests across ten classes:
+`SolarPanelGenerationTest`, `SolarTierTest`, `SolarMathTest`, `HelmetRulesTest`, `HelmetItemTest`,
+`MTRecipeValidationTest`, `MolecularTransformerLogicTest`, `NetworkTaskTest`, `SlotElectricItemTest`, and
+`NamespaceResourceTest`.
 
 ### 9.2 Upstream/IC2 files decompiled for this review
 

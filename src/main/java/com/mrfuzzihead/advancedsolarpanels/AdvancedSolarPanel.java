@@ -110,8 +110,7 @@ public class AdvancedSolarPanel {
     private static boolean enableHardRecipes;
     public static final String CATEGORY_RECIPES = "recipes settings";
     public static final String CATEGORY_QGENERATOR = "quantum generator";
-    public static final Side side = FMLCommonHandler.instance()
-        .getEffectiveSide();
+    public static Side side;
     @Instance("AdvancedSolarPanel")
     public static AdvancedSolarPanel instance = new AdvancedSolarPanel();
 
@@ -158,6 +157,8 @@ public class AdvancedSolarPanel {
 
     @EventHandler
     public void preInit(FMLPreInitializationEvent event) {
+        side = FMLCommonHandler.instance()
+            .getEffectiveSide();
         Configuration config = new Configuration(event.getSuggestedConfigurationFile());
 
         try {
