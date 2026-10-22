@@ -24,6 +24,7 @@ import com.mrfuzzihead.advancedsolarpanels.common.container.ContainerMolecularTr
 import com.mrfuzzihead.advancedsolarpanels.network.IReceiveServerEvents;
 import com.mrfuzzihead.advancedsolarpanels.network.PacketChangeState;
 import com.mrfuzzihead.advancedsolarpanels.utils.MTRecipeManager;
+import com.mrfuzzihead.advancedsolarpanels.utils.MTRecipeRecord;
 
 import ic2.api.energy.event.EnergyTileLoadEvent;
 import ic2.api.energy.event.EnergyTileUnloadEvent;
@@ -39,6 +40,7 @@ public class TileEntityMolecularTransformer extends TileEntityBase
     INetworkUpdateListener, INetworkTileEntityEventListener, IReceiveServerEvents {
 
     private static final double MAX_ENERGY_BUFFER = 10_000_000.0D;
+    private static final int SINK_TIER = 4;
     private static final int[] slots_top = new int[] { 0 };
     private static final int[] slots_bottom = new int[] { 1 };
     private static final int[] slots_sides = new int[] { 1 };
@@ -78,7 +80,7 @@ public class TileEntityMolecularTransformer extends TileEntityBase
         this.facing = 2;
         this.workSlots = new ItemStack[2];
         this.initialized = false;
-        this.machineTire = Integer.MAX_VALUE;
+        this.machineTire = SINK_TIER;
         this.ticker = randomizer.nextInt(this.tickRate());
         this.lastX = this.xCoord;
         this.lastY = this.yCoord;
@@ -160,6 +162,7 @@ public class TileEntityMolecularTransformer extends TileEntityBase
                     this.lastProgress = 0;
                     this.doWork = true;
                     this.deactiveTimer = false;
+                    this.worldObj.markBlockForUpdate(this.xCoord, this.yCoord, this.zCoord);
                 }
             } else if (this.doWork) {
                 if (this.energyBuffer > 0) {
@@ -200,37 +203,32 @@ public class TileEntityMolecularTransformer extends TileEntityBase
     private boolean canSmelt() {
         if (this.workSlots[0] == null) {
             return false;
-        } else {
-            for (int i = 0; i < MTRecipeManager.transformerRecipes.size(); i++) {
-                ItemStack tmpItemStack = MTRecipeManager.transformerRecipes.get(i).inputStack;
-                if (this.isItemEqual(this.workSlots[0], tmpItemStack)) {
-                    if (this.workSlots[1] != null) {
-                        if (!this
-                            .isItemEqual(this.workSlots[1], MTRecipeManager.transformerRecipes.get(i).outputStack)) {
-                            return false;
-                        }
+        }
 
-                        if (this.workSlots[1].stackSize
-                            + MTRecipeManager.transformerRecipes.get(i).outputStack.stackSize
-                            > this.workSlots[1].getMaxStackSize()) {
-                            return false;
-                        }
-                    }
-
-                    if (this.workSlots[0].stackSize < MTRecipeManager.transformerRecipes.get(i).inputStack.stackSize) {
-                        return false;
-                    }
-
-                    this.lastRecipeInput = MTRecipeManager.transformerRecipes.get(i).inputStack.copy();
-                    this.lastRecipeOutput = MTRecipeManager.transformerRecipes.get(i).outputStack.copy();
-                    this.lastRecipeEnergyPerOperation = MTRecipeManager.transformerRecipes.get(i).energyPerOperation;
-                    this.lastRecipeNumber = i;
-                    return true;
+        for (MTRecipeRecord recipe : MTRecipeManager.getRecipesFor(this.workSlots[0])) {
+            if (!MTRecipeManager.matchesInput(this.workSlots[0], recipe)) {
+                continue;
+            }
+            if (this.workSlots[1] != null) {
+                if (!this.isItemEqual(this.workSlots[1], recipe.outputStack)) {
+                    continue;
+                }
+                if (this.workSlots[1].stackSize + recipe.outputStack.stackSize > this.workSlots[1].getMaxStackSize()) {
+                    continue;
                 }
             }
+            if (this.workSlots[0].stackSize < recipe.inputStack.stackSize) {
+                continue;
+            }
 
-            return false;
+            this.lastRecipeInput = recipe.inputStack.copy();
+            this.lastRecipeOutput = recipe.outputStack.copy();
+            this.lastRecipeEnergyPerOperation = recipe.energyPerOperation;
+            this.lastRecipeNumber = MTRecipeManager.transformerRecipes.indexOf(recipe);
+            return true;
         }
+
+        return false;
     }
 
     public double gainFuel(double energyPacket) {
@@ -307,9 +305,12 @@ public class TileEntityMolecularTransformer extends TileEntityBase
         }
     }
 
-    private boolean isItemEqual(ItemStack inputStack, ItemStack outputStack) {
-        return inputStack.getItem() == outputStack.getItem()
-            && inputStack.getItemDamage() == outputStack.getItemDamage();
+    private boolean isItemEqual(ItemStack first, ItemStack second) {
+        if (first == null || second == null) {
+            return false;
+        }
+        return first.getItem() == second.getItem() && first.getItemDamage() == second.getItemDamage()
+            && ItemStack.areItemStackTagsEqual(first, second);
     }
 
     public void updateVisibility() {}
@@ -372,11 +373,9 @@ public class TileEntityMolecularTransformer extends TileEntityBase
     }
 
     public int searchRecipeNumber(ItemStack inputStack, ItemStack outputStack) {
-        for (int i = 0; i < MTRecipeManager.transformerRecipes.size(); i++) {
-            ItemStack tmpInputStack = MTRecipeManager.transformerRecipes.get(i).inputStack;
-            ItemStack tmpOutputStack = MTRecipeManager.transformerRecipes.get(i).outputStack;
-            if (this.isItemEqual(inputStack, tmpInputStack) && this.isItemEqual(outputStack, tmpOutputStack)) {
-                return i;
+        for (MTRecipeRecord recipe : MTRecipeManager.getRecipesFor(inputStack)) {
+            if (MTRecipeManager.matchesInput(inputStack, recipe) && this.isItemEqual(outputStack, recipe.outputStack)) {
+                return MTRecipeManager.transformerRecipes.indexOf(recipe);
             }
         }
 
@@ -571,11 +570,29 @@ public class TileEntityMolecularTransformer extends TileEntityBase
     public void onDataPacket(NetworkManager net, S35PacketUpdateTileEntity pkt) {
         NBTTagCompound nbt = pkt.func_148857_g();
         this.isActive = nbt.getBoolean("active");
+        this.lastRecipeEnergyPerOperation = nbt.getInteger("recipeEnergy");
+        this.lastRecipeInput = nbt.hasKey("recipeInput")
+            ? ItemStack.loadItemStackFromNBT(nbt.getCompoundTag("recipeInput"))
+            : null;
+        this.lastRecipeOutput = nbt.hasKey("recipeOutput")
+            ? ItemStack.loadItemStackFromNBT(nbt.getCompoundTag("recipeOutput"))
+            : null;
     }
 
     public Packet getDescriptionPacket() {
         NBTTagCompound nbttagcompound = new NBTTagCompound();
         nbttagcompound.setBoolean("active", this.isActive);
+        nbttagcompound.setInteger("recipeEnergy", this.lastRecipeEnergyPerOperation);
+        if (this.lastRecipeInput != null) {
+            NBTTagCompound inputTag = new NBTTagCompound();
+            this.lastRecipeInput.writeToNBT(inputTag);
+            nbttagcompound.setTag("recipeInput", inputTag);
+        }
+        if (this.lastRecipeOutput != null) {
+            NBTTagCompound outputTag = new NBTTagCompound();
+            this.lastRecipeOutput.writeToNBT(outputTag);
+            nbttagcompound.setTag("recipeOutput", outputTag);
+        }
         return new S35PacketUpdateTileEntity(this.xCoord, this.yCoord, this.zCoord, 3, nbttagcompound);
     }
 

@@ -9,11 +9,18 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.mrfuzzihead.advancedsolarpanels.common.tiles.TileEntityMolecularTransformer;
+import com.mrfuzzihead.advancedsolarpanels.utils.MTRecipeManager;
 
 class MolecularTransformerLogicTest {
+
+    @BeforeEach
+    void clearRecipes() {
+        MTRecipeManager.transformerRecipes.clear();
+    }
 
     private static ItemStack stack() {
         return new ItemStack(new Item(), 1, 0);
@@ -88,6 +95,28 @@ class MolecularTransformerLogicTest {
 
         assertEquals(12.5D, copy.energyBuffer, 0.0D);
         assertTrue(copy.waitOutputSlot);
+    }
+
+    @Test
+    void sinkTierIsEv() {
+        assertEquals(4, new TileEntityMolecularTransformer().getSinkTier());
+    }
+
+    @Test
+    void recipeSearchIsNbtAware() {
+        MTRecipeManager.transformerRecipes.clear();
+        ItemStack input = stack();
+        ItemStack output = stack();
+        MTRecipeManager.instance.addMTRecipe(input, output, 100);
+
+        TileEntityMolecularTransformer transformer = new TileEntityMolecularTransformer();
+        assertEquals(0, transformer.searchRecipeNumber(input, output));
+
+        ItemStack taggedInput = stack();
+        NBTTagCompound tag = new NBTTagCompound();
+        tag.setBoolean("test", true);
+        taggedInput.setTagCompound(tag);
+        assertEquals(-1, transformer.searchRecipeNumber(taggedInput, output));
     }
 
     @Test

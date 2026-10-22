@@ -11,7 +11,8 @@ public class TileEntityUltimateSolarPanel extends TileEntitySolarPanel {
             AdvancedSolarPanel.uhGenDay,
             AdvancedSolarPanel.uhGenNight,
             AdvancedSolarPanel.uhOutput,
-            AdvancedSolarPanel.uhStorage);
+            AdvancedSolarPanel.uhStorage,
+            3);
     }
 
     @Override

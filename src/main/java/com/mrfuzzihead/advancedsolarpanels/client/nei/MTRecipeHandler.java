@@ -66,7 +66,7 @@ public class MTRecipeHandler extends TemplateRecipeHandler {
 
     public void loadUsageRecipes(ItemStack ingredient) {
         for (MTRecipeRecord record : MTRecipeManager.transformerRecipes) {
-            if (ItemStackUtil.areStacksEqual(record.inputStack, ingredient)) {
+            if (MTRecipeManager.matchesInput(ingredient, record)) {
                 this.arecipes.add(
                     new MTRecipeHandler.CachedMTRecipe(
                         record.inputStack,

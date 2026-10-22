@@ -48,39 +48,53 @@ public class ContainerMolecularTransformer extends Container {
         icrafting.sendProgressBarUpdate(this, 6, this.tileentity.lastRecipeNumber);
         icrafting.sendProgressBarUpdate(this, 7, this.tileentity.inputEU & 65535);
         icrafting.sendProgressBarUpdate(this, 8, this.tileentity.inputEU >>> 16);
-    }
-
-    public void detectAndSendChanges() {
-        super.detectAndSendChanges();
-
-        for (int i = 0; i < this.crafters.size(); i++) {
-            ICrafting icrafting = (ICrafting) this.crafters.get(i);
-            icrafting.sendProgressBarUpdate(this, 0, (int) this.tileentity.lastRecipeEnergyUsed & 65535);
-            icrafting.sendProgressBarUpdate(this, 1, (int) this.tileentity.lastRecipeEnergyUsed >>> 16);
-            icrafting.sendProgressBarUpdate(this, 2, this.tileentity.lastRecipeEnergyPerOperation & 65535);
-            icrafting.sendProgressBarUpdate(this, 3, this.tileentity.lastRecipeEnergyPerOperation >>> 16);
-            if (this.doWork != (this.tileentity.doWork ? 1 : 0)) {
-                icrafting.sendProgressBarUpdate(this, 4, this.tileentity.doWork ? 1 : 0);
-            }
-
-            if (this.lastProgress != this.tileentity.lastProgress) {
-                icrafting.sendProgressBarUpdate(this, 5, this.tileentity.lastProgress);
-            }
-
-            if (this.lastRecipeNumber != this.tileentity.lastRecipeNumber) {
-                icrafting.sendProgressBarUpdate(this, 6, this.tileentity.lastRecipeNumber);
-            }
-
-            icrafting.sendProgressBarUpdate(this, 7, this.tileentity.inputEU & 65535);
-            icrafting.sendProgressBarUpdate(this, 8, this.tileentity.inputEU >>> 16);
-        }
-
         this.energyUsed = (int) this.tileentity.lastRecipeEnergyUsed;
         this.energyPerOperartion = this.tileentity.lastRecipeEnergyPerOperation;
         this.doWork = this.tileentity.doWork ? 1 : 0;
         this.lastProgress = this.tileentity.lastProgress;
         this.lastRecipeNumber = this.tileentity.lastRecipeNumber;
         this.inputEU = this.tileentity.inputEU;
+    }
+
+    public void detectAndSendChanges() {
+        super.detectAndSendChanges();
+
+        int used = (int) this.tileentity.lastRecipeEnergyUsed;
+        int perOperation = this.tileentity.lastRecipeEnergyPerOperation;
+        int active = this.tileentity.doWork ? 1 : 0;
+        int input = this.tileentity.inputEU;
+
+        for (int i = 0; i < this.crafters.size(); i++) {
+            ICrafting icrafting = (ICrafting) this.crafters.get(i);
+            if (this.energyUsed != used) {
+                icrafting.sendProgressBarUpdate(this, 0, used & 65535);
+                icrafting.sendProgressBarUpdate(this, 1, used >>> 16);
+            }
+            if (this.energyPerOperartion != perOperation) {
+                icrafting.sendProgressBarUpdate(this, 2, perOperation & 65535);
+                icrafting.sendProgressBarUpdate(this, 3, perOperation >>> 16);
+            }
+            if (this.doWork != active) {
+                icrafting.sendProgressBarUpdate(this, 4, active);
+            }
+            if (this.lastProgress != this.tileentity.lastProgress) {
+                icrafting.sendProgressBarUpdate(this, 5, this.tileentity.lastProgress);
+            }
+            if (this.lastRecipeNumber != this.tileentity.lastRecipeNumber) {
+                icrafting.sendProgressBarUpdate(this, 6, this.tileentity.lastRecipeNumber);
+            }
+            if (this.inputEU != input) {
+                icrafting.sendProgressBarUpdate(this, 7, input & 65535);
+                icrafting.sendProgressBarUpdate(this, 8, input >>> 16);
+            }
+        }
+
+        this.energyUsed = used;
+        this.energyPerOperartion = perOperation;
+        this.doWork = active;
+        this.lastProgress = this.tileentity.lastProgress;
+        this.lastRecipeNumber = this.tileentity.lastRecipeNumber;
+        this.inputEU = input;
     }
 
     public void updateProgressBar(int index, int value) {

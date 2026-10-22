@@ -9,7 +9,6 @@ import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.inventory.Container;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.nbt.NBTTagList;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.util.ForgeDirection;
@@ -134,8 +133,11 @@ public class TileEntityQGenerator extends TileEntityBase
 
     public void readFromNBT(NBTTagCompound nbttagcompound) {
         super.readFromNBT(nbttagcompound);
-        this.production = Math.max(1, nbttagcompound.getInteger("production"));
-        this.maxPacketSize = Math.max(1, nbttagcompound.getInteger("maxPacketSize"));
+        this.production = nbttagcompound.hasKey("production") ? Math.max(1, nbttagcompound.getInteger("production"))
+            : Math.max(1, AdvancedSolarPanel.qgbaseProduction);
+        this.maxPacketSize = nbttagcompound.hasKey("maxPacketSize")
+            ? Math.max(1, nbttagcompound.getInteger("maxPacketSize"))
+            : Math.max(1, AdvancedSolarPanel.qgbaseMaxPacketSize);
         this.lastX = nbttagcompound.getInteger("lastX");
         this.lastY = nbttagcompound.getInteger("lastY");
         this.lastZ = nbttagcompound.getInteger("lastZ");
@@ -143,7 +145,6 @@ public class TileEntityQGenerator extends TileEntityBase
 
     public void writeToNBT(NBTTagCompound nbttagcompound) {
         super.writeToNBT(nbttagcompound);
-        new NBTTagList();
         nbttagcompound.setInteger("production", this.production);
         nbttagcompound.setInteger("maxPacketSize", this.maxPacketSize);
         nbttagcompound.setInteger("lastX", this.lastX);
@@ -230,7 +231,7 @@ public class TileEntityQGenerator extends TileEntityBase
 
     public double getOfferedEnergy() {
         this.getActive();
-        return !this.active ? this.production : 0.0;
+        return !this.active ? Math.min(this.production, this.maxPacketSize) : 0.0D;
     }
 
     public void drawEnergy(double amount) {}

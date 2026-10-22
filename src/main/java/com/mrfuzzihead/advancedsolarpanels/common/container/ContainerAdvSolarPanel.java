@@ -14,7 +14,6 @@ public class ContainerAdvSolarPanel extends Container {
 
     private TileEntitySolarPanel tileentity;
     private int storage = 0;
-    private int fuel = 0;
     private boolean sunIsUp;
     private boolean skyIsVisible;
     private int generating;
@@ -23,7 +22,8 @@ public class ContainerAdvSolarPanel extends Container {
         this.tileentity = tileentitysolarpanel;
 
         for (int j = 0; j < 4; j++) {
-            this.addSlotToContainer(new SlotElectricItem(this.tileentity, j, 17 + j * 18, 59));
+            this.addSlotToContainer(
+                new SlotElectricItem(this.tileentity, j, 17 + j * 18, 59, this.tileentity.getChargeTier()));
         }
 
         for (int i = 0; i < 3; i++) {
@@ -44,24 +44,41 @@ public class ContainerAdvSolarPanel extends Container {
         icrafting.sendProgressBarUpdate(this, 2, this.tileentity.generating);
         icrafting.sendProgressBarUpdate(this, 3, this.tileentity.storage & 65535);
         icrafting.sendProgressBarUpdate(this, 4, this.tileentity.storage >>> 16);
+        this.sunIsUp = this.tileentity.sunIsUp;
+        this.skyIsVisible = this.tileentity.skyIsVisible;
+        this.generating = this.tileentity.generating;
+        this.storage = this.tileentity.storage;
     }
 
     public void detectAndSendChanges() {
         super.detectAndSendChanges();
 
+        boolean sun = this.tileentity.sunIsUp;
+        boolean sky = this.tileentity.skyIsVisible;
+        int gen = this.tileentity.generating;
+        int stored = this.tileentity.storage;
+
         for (int i = 0; i < this.crafters.size(); i++) {
             ICrafting icrafting = (ICrafting) this.crafters.get(i);
-            icrafting.sendProgressBarUpdate(this, 0, this.tileentity.sunIsUp ? 1 : 0);
-            icrafting.sendProgressBarUpdate(this, 1, this.tileentity.skyIsVisible ? 1 : 0);
-            icrafting.sendProgressBarUpdate(this, 2, this.tileentity.generating);
-            icrafting.sendProgressBarUpdate(this, 3, this.tileentity.storage & 65535);
-            icrafting.sendProgressBarUpdate(this, 4, this.tileentity.storage >>> 16);
+            if (this.sunIsUp != sun) {
+                icrafting.sendProgressBarUpdate(this, 0, sun ? 1 : 0);
+            }
+            if (this.skyIsVisible != sky) {
+                icrafting.sendProgressBarUpdate(this, 1, sky ? 1 : 0);
+            }
+            if (this.generating != gen) {
+                icrafting.sendProgressBarUpdate(this, 2, gen);
+            }
+            if (this.storage != stored) {
+                icrafting.sendProgressBarUpdate(this, 3, stored & 65535);
+                icrafting.sendProgressBarUpdate(this, 4, stored >>> 16);
+            }
         }
 
-        this.sunIsUp = this.tileentity.sunIsUp;
-        this.skyIsVisible = this.tileentity.skyIsVisible;
-        this.generating = this.tileentity.generating;
-        this.storage = this.tileentity.storage;
+        this.sunIsUp = sun;
+        this.skyIsVisible = sky;
+        this.generating = gen;
+        this.storage = stored;
     }
 
     public void updateProgressBar(int i, int j) {
@@ -92,20 +109,23 @@ public class ContainerAdvSolarPanel extends Container {
         if (slotObject != null && slotObject.getHasStack()) {
             ItemStack stackInSlot = slotObject.getStack();
             stack = stackInSlot.copy();
-            if (par2 >= 0 && par2 <= 3) {
+            if (par2 < 4) {
                 if (!this.mergeItemStack(stackInSlot, 4, 40, true)) {
                     return null;
                 }
-            } else if (par2 >= 4 && par2 < 31) {
-                if (!this.mergeItemStack(stackInSlot, 0, 4, false)
-                    && !this.mergeItemStack(stackInSlot, 31, 40, false)) {
+            } else if (par2 < 31) {
+                boolean merged = this.canInsertIntoChargeSlots(stackInSlot)
+                    && this.mergeItemStack(stackInSlot, 0, 4, false);
+                if (!merged && !this.mergeItemStack(stackInSlot, 31, 40, false)) {
                     return null;
                 }
-            } else if (par2 >= 31 && par2 < 39) {
-                if (!this.mergeItemStack(stackInSlot, 0, 30, false)) {
+            } else if (par2 < 40) {
+                boolean merged = this.canInsertIntoChargeSlots(stackInSlot)
+                    && this.mergeItemStack(stackInSlot, 0, 4, false);
+                if (!merged && !this.mergeItemStack(stackInSlot, 4, 31, false)) {
                     return null;
                 }
-            } else if (!this.mergeItemStack(stackInSlot, 0, 30, false)) {
+            } else {
                 return null;
             }
 
@@ -123,6 +143,16 @@ public class ContainerAdvSolarPanel extends Container {
         }
 
         return stack;
+    }
+
+    private boolean canInsertIntoChargeSlots(ItemStack stack) {
+        for (int i = 0; i < 4; i++) {
+            Slot slot = (Slot) this.inventorySlots.get(i);
+            if (slot.isItemValid(stack)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public boolean canInteractWith(EntityPlayer entityplayer) {

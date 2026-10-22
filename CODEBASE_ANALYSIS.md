@@ -11,7 +11,14 @@
 
 **Method:** static review of 45 Java files (~5,000 lines), resource/lang audit, source/metadata validation, build check, `NAMESPACE_CHANGE.md` verification, decompiled IC2/upstream comparison, and a formula-level simulation of the 1.7.10 sun/light math.
 
-> **First-batch fixes implemented after this review:** the NEI compile dependency was corrected, the MT Core reflector recipe now uses a fresh stack, packets are scheduled onto the game thread (server task queue + client task scheduler), `Thread.getAllStackTraces()` was removed, the MT GUI recipe-index crash and static caption leak were fixed, MT recipes are validated (non-negative energy, 1–64 stack sizes), the MT energy buffer/progress is persisted and capped, `getDemandedEnergy` accounts for buffered energy, output-blocked injection is rejected, metadata/config/divide-by-zero/NPE guards were added, panel charge slots now use IC2-style simulated charge acceptance (electric, not full, not stacked), panel drops now use IC2’s wrench/casing behavior, `modId`/`modName` metadata now match `@Mod`, metal block sounds were set on the machines, and a 27-test JUnit baseline was added (`./gradlew build` passes).
+> **First-batch fixes implemented after this review:** the NEI compile dependency was corrected, the MT Core reflector recipe now uses a fresh stack, packets are scheduled onto the game thread (server task queue + client task scheduler), `Thread.getAllStackTraces()` was removed, the MT GUI recipe-index crash and static caption leak were fixed, MT recipes are validated (non-negative energy, 1–64 stack sizes), the MT energy buffer/progress is persisted and capped, `getDemandedEnergy` accounts for buffered energy, output-blocked injection is rejected, metadata/config/divide-by-zero/NPE guards were added, panel charge slots now use IC2-style simulated charge acceptance (electric, not full, not stacked), panel drops now use IC2’s wrench/casing behavior, `modId`/`modName` metadata now match `@Mod`, metal block sounds were set on the machines, and a 33-test JUnit baseline was added (`./gradlew build` passes).
+>
+>
+> **Second-batch changes implemented:** real panel source/charge tiers (1/2/3/5), MT sink tier EV (4),
+> MT GUI recipe data sync via description packets, MT recipe indexing and NBT-aware matching,
+> dynamic ore-dictionary input matching, container change-only sync, panel shift-click validation and
+> range fixes, and QGen max-packet cap / GUI layout / redstone indicator / shift-click cleanup.
+> Solar/helmet parity was deferred by request.
 >
 > The line references below were captured before the Spotless formatting pass; use the class/method names and paths as the authoritative anchors.
 
@@ -360,10 +367,10 @@ behavior or true for parity). Implement IC2’s predicate and linear scaling wit
 or fractional accumulator. Keep `genNight` behind a separate `nightGeneration` option (default
 upstream behavior) so players can choose.
 
-#### B13. Energy source tier is `Integer.MAX_VALUE` instead of the panel tier
+#### B13. (Fixed) Energy source tier was `Integer.MAX_VALUE` instead of the panel tier
 
-`TileEntitySolarPanel` (`:80`, `:404-405`) and `TileEntityQGenerator` (`:54`, `:317-318`) both return
-`Integer.MAX_VALUE` from `getSourceTier()`. IC2’s base solar returns tier 1 and caps offered energy at
+Panels previously returned `Integer.MAX_VALUE` from `getSourceTier()` (the QGen still does by
+request). IC2’s base solar returns tier 1 and caps offered energy at
 `EnergyNet.getPowerFromTier(tier)`.
 
 Problems:
@@ -375,11 +382,9 @@ Problems:
 - The output is not validated against the tier. The defaults are consistent only by accident:
   Advanced 32 = tier 1 (32), Hybrid 128 = tier 2, Ultimate 512 = tier 3, Quantum 8192 = tier 5.
 
-**Fix:** add a tier to each panel and return it from `getSourceTier()`; cap
-`getOfferedEnergy()` at `Math.min(storage, production, powerFromTier(tier))`; validate config
-output against the tier (or derive the tier with `EnergyNet.getTierFromPower(production)` and clamp).
-For the QGen, expose a tier/packet setting; for the MT, use a real sink tier (EV 4 is the natural
-choice because the recipe uses an EV transformer) instead of `Integer.MAX_VALUE`.
+**Fix applied:** panels now carry tiers 1/2/3/5, return them from `getSourceTier()`, and cap
+`getOfferedEnergy()` with `EnergyNet.getPowerFromTier(tier)`. Charge slots use the same tier. The MT
+uses sink tier EV (4). The QGen remains at `Integer.MAX_VALUE` deliberately, per request.
 
 #### B14. (Fixed) Charge slots accepted any item and charged at `Integer.MAX_VALUE`
 
@@ -392,9 +397,8 @@ choice because the recipe uses an EV transformer) instead of `Integer.MAX_VALUE`
 - the charge tier does not match the panel tier.
 
 **Fix applied:** `ContainerAdvSolarPanel` now uses `SlotElectricItem`, which mirrors IC2's
-`InvSlotCharge.accepts`: it simulates a charge and rejects non-electric, full, stacked, or
-tier-incompatible items. `isItemValidForSlot` filters non-electric stacks for hoppers. Tier
-filtering and a configurable charge tier remain a later parity item.
+`InvSlotCharge.accepts`: it simulates a charge at the panel tier and rejects non-electric, full,
+stacked, or tier-incompatible items. `isItemValidForSlot` applies the same check for hoppers.
 
 #### B15. (Fixed) Wrench drop rate and pickaxe drops differed from IC2
 
@@ -431,7 +435,7 @@ cooldown. Do not keep per-player state on the Item instance.
 `chargeTier`, `ignoreTransferLimit`. For IC2 parity: chest-only, any tier, ignore transfer limit,
 and no self-charge. Keep the array-rate output and air supply behind options.
 
-#### B18. Quantum Generator `maxPacketSize` is dead and the GUI cannot set it
+#### B18. (Fixed) Quantum Generator `maxPacketSize` was dead in the output path
 
 `TileEntityQGenerator` stores `maxPacketSize` (`:36`, `:48`) and syncs it via
 `ContainerQGenerator` (`:32-33`), but `getOfferedEnergy()` (`:232-235`) returns the full
@@ -439,16 +443,12 @@ and no self-charge. Keep the array-rate output and air supply behind options.
 despite the upstream feature description (“output 5120 in 10×512 packets”). The fields
 `maxPacketSizeEdit`/`productonEdit` are declared and never added to the GUI.
 
-**Fix:** define the semantics. A plain 1.7.10 `IEnergySource` offers one amount per tick; it cannot
-emit multiple packets in one tick without custom energy-net integration. Either:
-- interpret `maxPacketSize` as a cap on the single offered packet and document that production above
-  the cap is buffered/delayed, or
-- remove `maxPacketSize`/the dead GUI fields, or
-- implement an internal packet queue and a compatible source node per packet (advanced, needs care).
+**Fix applied:** `getOfferedEnergy()` is now `min(production, maxPacketSize)`, making the field a
+per-tick packet cap. The GUI displays both values, NBT defaults fall back to the config, and the
+dead text fields were removed. True multi-packet-per-tick output would require custom energy-net
+integration and is not implemented.
 
-Also clamp `production` to a sane maximum and validate NBT defaults.
-
-#### B19. QGen GUI/redstone indicator is inverted
+#### B19. (Fixed) QGen GUI/redstone indicator was inverted
 
 `getActive()` (`:120-128`) sets `active = world.isBlockIndirectlyGettingPowered(...)`.
 `getOfferedEnergy()` (`:232-235`) returns `production` only when `!active`, so redstone **disables**
@@ -456,24 +456,21 @@ the generator. `GuiQGenerator.drawGuiContainerBackgroundLayer` (`:55-57`) draws 
 when `!active`, i.e. while the generator is actually producing. Fix the indicator (or rename the
 state to `disabled`/`redstonePowered`).
 
-#### B20. Molecular Transformer tier/overvoltage
+#### B20. (Fixed) Molecular Transformer tier/overvoltage
 
-`getSinkTier()` returns `Integer.MAX_VALUE` (`:592-594`), so the MT accepts any voltage and never
-rejects over-tier packets. For an EV-tier machine (recipe uses an EV transformer), return 4 and
-either reject `voltage > tier power` or use IC2’s standard machine behavior. The energy-net tier is
-also used for the optional linear transfer model; MAX is not safe there.
+`getSinkTier()` now returns EV (4), matching the EV transformer in its recipe. IC2’s standard
+machines do not reject over-voltage in `injectEnergy`; the sink tier is used by the energy net. The
+previous MAX tier was unsafe with the optional linear transfer model.
 
 ### 2.3 S3 — UI/UX and interaction bugs
 
-#### B21. QGen GUI is taller than its background and has no player-inventory frame
+#### B21. (Fixed) QGen GUI slots did not match the texture
 
-`GuiQGenerator` sets `ySize = 149` (`:30`), but `ContainerQGenerator` places the main inventory at
-y=110/128/146 and the hotbar at y=168 (`ContainerQGenerator.java:16-24`). The texture’s opaque
-content is only `190×149` (verified by alpha bounding box), so the last main row and the hotbar are
-drawn outside the background and have no slot frames. Either move the slots into the visible area
-(not enough room) or make a taller GUI texture and set `ySize` accordingly.
+`GuiQGenerator` keeps `ySize = 149`, and `ContainerQGenerator` now places the main inventory at
+y=65/83/101 and the hotbar at y=123, matching the texture’s actual slot frames. The packet-size
+value is displayed in the header, and player-inventory shift-click is implemented.
 
-#### B22. Shift-click transfer bugs
+#### B22. (Fixed) Shift-click transfer bugs
 
 `ContainerAdvSolarPanel.transferStackInSlot` (`:86-122`):
 
@@ -486,17 +483,19 @@ drawn outside the background and have no slot frames. Either move the slots into
 
 `ContainerQGenerator` has **no** `transferStackInSlot` override, so shift-clicking does nothing.
 
-**Fix:** use explicit slot-range constants; add tests for every source range; use filtered slots.
+**Fix applied:** panel ranges now use 0–3 machine / 4–30 main / 31–39 hotbar, and QGen gained
+main↔hotbar transfer. Panel shift-click also checks `Slot.isItemValid` before merging into the
+charge slots; vanilla `Container.mergeItemStack` does not consult slot validity itself.
 
-#### B23. `GuiQGenerator` uses AWT and stale keyboard state
+#### B23. (Fixed) `GuiQGenerator` used AWT and stale keyboard state
 
 `GuiQGenerator` implements `java.awt.event.KeyListener` (`:8-19`) but never registers it; it prints
 key codes (`:87-89`) and imports AWT into a game GUI. Shift detection in `actionPerformed` uses
 `Keyboard.getEventKey() == 42` (`:62`), which is stale during a mouse click; use
-`GuiScreen.isShiftKeyDown()`. Remove AWT, `keyPressed`/`keyReleased`/`keyTyped`, and the dead text
-fields (or implement them properly).
+`GuiScreen.isShiftKeyDown()`. **Fix applied:** AWT, dead text fields, and the debug key listener were
+removed; shift uses `GuiScreen.isShiftKeyDown()`.
 
-#### B24. GUI/container sync sends every value every tick
+#### B24. (Fixed) GUI/container sync sent every value every tick
 
 - `ContainerAdvSolarPanel.detectAndSendChanges` sends 5 progress-bar updates per crafter per tick
   (`:46-62`), even when nothing changed. It has cached fields but never compares them.
@@ -506,8 +505,8 @@ fields (or implement them properly).
 - `ContainerQGenerator.detectAndSendChanges` sends production, max packet, and active every tick
   (`:27-36`); it has no initial `addCraftingToCrafters`.
 
-**Fix:** cache the last sent values and compare; send initial values in `addCraftingToCrafters`.
-This is a real network/CPU cost with many open GUIs.
+**Fix applied:** all three containers now cache values, send initial values in
+`addCraftingToCrafters`, and send only changed progress-bar channels.
 
 #### B25. (Fixed) Interaction distance was 64 blocks for some machines
 
@@ -1231,8 +1230,8 @@ $ ./gradlew build --offline
 BUILD SUCCESSFUL
 ```
 
-The test baseline currently has 27 passing tests across six classes:
-`SolarPanelGenerationTest`, `MTRecipeValidationTest`, `MolecularTransformerLogicTest`,
+The test baseline currently has 33 passing tests across seven classes:
+`SolarPanelGenerationTest`, `SolarTierTest`, `MTRecipeValidationTest`, `MolecularTransformerLogicTest`,
 `NetworkTaskTest`, `SlotElectricItemTest`, and `NamespaceResourceTest`.
 
 ### 9.2 Upstream/IC2 files decompiled for this review

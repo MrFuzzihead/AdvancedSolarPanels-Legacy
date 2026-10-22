@@ -130,11 +130,17 @@ public class GuiMolecularTransformer extends GuiContainer {
                 yOffset + yTextInterval * 4,
                 16777215);
         } else {
-            MTRecipeRecord recipe = this.getDisplayedRecipe();
-            ItemStack inputStack = recipe != null ? recipe.inputStack : this.tileentity.lastRecipeInput;
-            ItemStack outputStack = recipe != null ? recipe.outputStack : this.tileentity.lastRecipeOutput;
-            int energyPerOperation = recipe != null ? recipe.energyPerOperation
-                : this.tileentity.lastRecipeEnergyPerOperation;
+            ItemStack inputStack = this.tileentity.lastRecipeInput;
+            ItemStack outputStack = this.tileentity.lastRecipeOutput;
+            int energyPerOperation = this.tileentity.lastRecipeEnergyPerOperation;
+            if (inputStack == null || outputStack == null) {
+                MTRecipeRecord recipe = this.getDisplayedRecipe();
+                if (recipe != null) {
+                    inputStack = recipe.inputStack;
+                    outputStack = recipe.outputStack;
+                    energyPerOperation = recipe.energyPerOperation;
+                }
+            }
             String inputName = inputStack != null ? inputStack.getDisplayName() : "?";
             String outputName = outputStack != null ? outputStack.getDisplayName() : "?";
             String inputEuFormated = parsingNumber(String.valueOf(this.tileentity.inputEU));

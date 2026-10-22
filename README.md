@@ -14,15 +14,15 @@ upgraded solar panels, solar helmets, a Molecular Transformer, and an admin-only
 
 ## Solar panels
 
-| Panel | Metadata | Day output | Night/rain output | Internal storage | Max output |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| Advanced Solar Panel | 0 | 8 EU/t | 1 EU/t | 32,000 EU | 32 EU/t |
-| Hybrid Solar Panel | 1 | 64 EU/t | 8 EU/t | 100,000 EU | 128 EU/t |
-| Ultimate Hybrid Solar Panel | 2 | 512 EU/t | 64 EU/t | 1,000,000 EU | 512 EU/t |
-| Quantum Solar Panel | 3 | 4096 EU/t | 2048 EU/t | 10,000,000 EU | 8192 EU/t |
+| Panel | Metadata | Tier | Day output | Night/rain output | Internal storage | Max output |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Advanced Solar Panel | 0 | 1 | 8 EU/t | 1 EU/t | 32,000 EU | 32 EU/t |
+| Hybrid Solar Panel | 1 | 2 | 64 EU/t | 8 EU/t | 100,000 EU | 128 EU/t |
+| Ultimate Hybrid Solar Panel | 2 | 3 | 512 EU/t | 64 EU/t | 1,000,000 EU | 512 EU/t |
+| Quantum Solar Panel | 3 | 5 | 4096 EU/t | 2048 EU/t | 10,000,000 EU | 8192 EU/t |
 
 Each panel has four charge slots and can charge electric items while it generates. The slots accept only
-IC2 electric items (`IElectricItem`) that can actually take a charge; full or stacked electric items are rejected, matching IC2's charge-slot behavior. The panels use ASP's classic rules: day/night/rain output is flat, and a panel only stops when it cannot see the sky.
+IC2 electric items (`IElectricItem`) that can actually take a charge at the panel's tier; full or stacked electric items are rejected, matching IC2's charge-slot behavior. The panels use ASP's classic rules: day/night/rain output is flat, and a panel only stops when it cannot see the sky.
 The current implementation does **not** use IC2's sky-light scaling; see
 [`CODEBASE_ANALYSIS.md`](CODEBASE_ANALYSIS.md) for the parity comparison and the planned
 `useIC2SolarRules` option.
@@ -61,16 +61,18 @@ inputItem:stackSize; outputItem:stackSize; energy
 ```
 
 Inputs and outputs can be item ids (`minecraft:item_name-meta` or `modID:item_name-meta`) or ore
-dictionary entries (`oredict:name`). A `#` starts a comment. Stack sizes are clamped to 1–64 and
-negative energy is rejected. The machine has one input slot, one output slot, a progress display, and
-a NEI recipe page.
+dictionary entries (`oredict:name`). Ore-dictionary inputs are matched dynamically, so entries added
+by other mods later are accepted. A `#` starts a comment. Stack sizes are clamped to 1–64 and negative
+energy is rejected. The machine has one input slot, one output slot, a progress display, and a NEI
+recipe page.
 
 ## Quantum Generator
 
 The Quantum Generator is an admin/map-maker block with **no crafting recipe**. It produces
 configurable EU/t and is disabled by a redstone signal. Its defaults are set in
 `config/AdvancedSolarPanel.cfg` under `quantum generator`:
-`quantumGeneratorDefaultProduction` and `quantumGeneratorDefaultPacketSize`.
+`quantumGeneratorDefaultProduction` and `quantumGeneratorDefaultPacketSize`. The packet size is a
+per-tick cap, so the offered output is `min(production, maxPacketSize)`.
 
 ## Recipes
 

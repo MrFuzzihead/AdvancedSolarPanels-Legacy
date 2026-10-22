@@ -54,6 +54,12 @@ class SlotElectricItemTest {
     }
 
     @Test
+    void rejectsItemsAboveSlotTier() {
+        SlotElectricItem slot = new SlotElectricItem(null, 0, 0, 0, 0);
+        assertFalse(slot.isItemValid(new ItemStack(new TestElectricItem(), 1, 0)));
+    }
+
+    @Test
     void rejectsStackedElectricItems() {
         SlotElectricItem slot = new SlotElectricItem(null, 0, 0, 0);
         assertFalse(slot.isItemValid(new ItemStack(new TestElectricItem(), 2, 0)));

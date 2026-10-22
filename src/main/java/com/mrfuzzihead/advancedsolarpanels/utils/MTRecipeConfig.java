@@ -67,6 +67,11 @@ public class MTRecipeConfig {
         return Math.max(1, Math.min(MAX_STACK_SIZE, stackSize));
     }
 
+    private static String getOreDictName(String spec) {
+        String[] split = spec.split(":");
+        return split.length >= 2 && split[0].equalsIgnoreCase("oredict") ? split[1] : null;
+    }
+
     public static void addDefaultRecipe(Object input, int inputStackSize, Object output, int outputStackSize,
         int energy) {
         String result = "";
@@ -274,12 +279,23 @@ public class MTRecipeConfig {
                     }
 
                     ItemStack outputStack = outputStacks.get(0);
-                    for (ItemStack inputStack : inputStacks) {
+                    String inputOreDict = getOreDictName(parts[0].trim());
+                    if (inputOreDict != null) {
                         MTRecipeRecord recipeToAdd = new MTRecipeRecord();
-                        recipeToAdd.inputStack = inputStack.copy();
+                        recipeToAdd.inputOreDict = inputOreDict;
+                        recipeToAdd.inputStack = inputStacks.get(0)
+                            .copy();
                         recipeToAdd.outputStack = outputStack.copy();
                         recipeToAdd.energyPerOperation = energy;
                         list.add(recipeToAdd);
+                    } else {
+                        for (ItemStack inputStack : inputStacks) {
+                            MTRecipeRecord recipeToAdd = new MTRecipeRecord();
+                            recipeToAdd.inputStack = inputStack.copy();
+                            recipeToAdd.outputStack = outputStack.copy();
+                            recipeToAdd.energyPerOperation = energy;
+                            list.add(recipeToAdd);
+                        }
                     }
                 }
             }

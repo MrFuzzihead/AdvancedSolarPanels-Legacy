@@ -31,3 +31,4 @@ gui.MolecularTransformer.output=Выход
 gui.MolecularTransformer.energyPerOperation=Энергия
 gui.MolecularTransformer.progress=Прогресс
 gui.QuantumGenerator.power=Выход
+gui.QuantumGenerator.packet=Макс. пакет

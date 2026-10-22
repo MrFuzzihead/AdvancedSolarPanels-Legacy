@@ -49,6 +49,26 @@ class MTRecipeValidationTest {
     }
 
     @Test
+    void indexesRecipesByItemAndDamage() {
+        Item item = new Item();
+        MTRecipeManager.instance.addMTRecipe(new ItemStack(item, 1, 0), stack(1), 10);
+        MTRecipeManager.instance.addMTRecipe(new ItemStack(item, 1, 1), stack(1), 20);
+
+        assertEquals(
+            1,
+            MTRecipeManager.getRecipesFor(new ItemStack(item, 1, 0))
+                .size());
+        assertEquals(
+            1,
+            MTRecipeManager.getRecipesFor(new ItemStack(item, 1, 1))
+                .size());
+        assertEquals(
+            0,
+            MTRecipeManager.getRecipesFor(new ItemStack(item, 1, 2))
+                .size());
+    }
+
+    @Test
     void copiesStacksInsteadOfAliasingThem() {
         ItemStack input = stack(2);
         ItemStack output = stack(1);

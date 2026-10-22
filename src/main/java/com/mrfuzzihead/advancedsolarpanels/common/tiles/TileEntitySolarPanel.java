@@ -17,6 +17,7 @@ import net.minecraftforge.common.util.ForgeDirection;
 
 import com.mrfuzzihead.advancedsolarpanels.common.container.ContainerAdvSolarPanel;
 
+import ic2.api.energy.EnergyNet;
 import ic2.api.energy.event.EnergyTileLoadEvent;
 import ic2.api.energy.event.EnergyTileUnloadEvent;
 import ic2.api.energy.tile.IEnergySource;
@@ -58,6 +59,11 @@ public class TileEntitySolarPanel extends TileEntityBase
     private static List<String> fields = Arrays.asList();
 
     public TileEntitySolarPanel(String gName, int typeSolar, int gDay, int gNight, int gOutput, int gmaxStorage) {
+        this(gName, typeSolar, gDay, gNight, gOutput, gmaxStorage, 1);
+    }
+
+    public TileEntitySolarPanel(String gName, int typeSolar, int gDay, int gNight, int gOutput, int gmaxStorage,
+        int tier) {
         this.created = false;
         this.facing = 2;
         this.solarType = typeSolar;
@@ -75,7 +81,7 @@ public class TileEntitySolarPanel extends TileEntityBase
         this.lastX = this.xCoord;
         this.lastY = this.yCoord;
         this.lastZ = this.zCoord;
-        this.machineTire = Integer.MAX_VALUE;
+        this.machineTire = Math.max(1, tier);
     }
 
     public void validate() {
@@ -160,7 +166,7 @@ public class TileEntitySolarPanel extends TileEntityBase
                 if (this.chargeSlots[i] != null && this.chargeSlots[i].getItem() instanceof IElectricItem
                     && this.storage > 0) {
                     sentPacket = ElectricItem.manager
-                        .charge(this.chargeSlots[i], this.storage, Integer.MAX_VALUE, false, false);
+                        .charge(this.chargeSlots[i], this.storage, this.machineTire, false, false);
                     if (sentPacket > 0.0) {
                         needInvUpdate = true;
                     }
@@ -397,7 +403,11 @@ public class TileEntitySolarPanel extends TileEntityBase
     }
 
     public double getOfferedEnergy() {
-        return Math.max(0.0, Math.min(this.production, this.storage));
+        double maxPacket = this.production;
+        if (EnergyNet.instance != null) {
+            maxPacket = Math.min(maxPacket, EnergyNet.instance.getPowerFromTier(this.machineTire));
+        }
+        return Math.max(0.0D, Math.min(this.storage, maxPacket));
     }
 
     public void drawEnergy(double amount) {
@@ -405,6 +415,10 @@ public class TileEntitySolarPanel extends TileEntityBase
     }
 
     public int getSourceTier() {
+        return this.machineTire;
+    }
+
+    public int getChargeTier() {
         return this.machineTire;
     }
 }

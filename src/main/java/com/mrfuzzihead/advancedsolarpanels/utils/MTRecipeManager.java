@@ -3,7 +3,10 @@ package com.mrfuzzihead.advancedsolarpanels.utils;
 import java.io.File;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import net.minecraft.block.Block;
 import net.minecraft.item.Item;
@@ -26,24 +29,146 @@ public class MTRecipeManager implements IMTRecipeManager {
     private static Method getUniqueName_Item;
     private static Method getUniqueName_Block;
     public static boolean rawReflectionDone = false;
+    private static final Map<Item, Map<Integer, List<MTRecipeRecord>>> RECIPE_INDEX = new HashMap<>();
+    private static final Map<String, List<MTRecipeRecord>> OREDICT_INDEX = new HashMap<>();
+    private static int indexedSize = -1;
+    private static int indexedSignature = 0;
+
+    public static List<MTRecipeRecord> getRecipesFor(ItemStack stack) {
+        if (stack == null || stack.getItem() == null) {
+            return Collections.emptyList();
+        }
+
+        rebuildIndexIfNeeded();
+        Map<Integer, List<MTRecipeRecord>> byDamage = RECIPE_INDEX.get(stack.getItem());
+        List<MTRecipeRecord> concrete = byDamage == null ? null : byDamage.get(stack.getItemDamage());
+        if (OREDICT_INDEX.isEmpty()) {
+            return concrete == null ? Collections.emptyList() : concrete;
+        }
+
+        int[] oreIds = OreDictionary.getOreIDs(stack);
+        if (oreIds == null || oreIds.length == 0) {
+            return concrete == null ? Collections.emptyList() : concrete;
+        }
+
+        List<MTRecipeRecord> combined = null;
+        for (int oreId : oreIds) {
+            String oreName = OreDictionary.getOreName(oreId);
+            if (oreName == null) {
+                continue;
+            }
+            List<MTRecipeRecord> oreRecipes = OREDICT_INDEX.get(oreName);
+            if (oreRecipes == null || oreRecipes.isEmpty()) {
+                continue;
+            }
+            if (combined == null) {
+                combined = new ArrayList<>(concrete == null ? Collections.emptyList() : concrete);
+            }
+            combined.addAll(oreRecipes);
+        }
+        if (combined != null) {
+            return combined;
+        }
+        return concrete == null ? Collections.emptyList() : concrete;
+    }
+
+    public static boolean matchesInput(ItemStack stack, MTRecipeRecord recipe) {
+        if (stack == null || recipe == null) {
+            return false;
+        }
+        if (recipe.inputOreDict != null) {
+            for (ItemStack oreStack : OreDictionary.getOres(recipe.inputOreDict)) {
+                if (OreDictionary.itemMatches(oreStack, stack, false)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        ItemStack expected = recipe.inputStack;
+        return expected != null && stack.getItem() == expected.getItem()
+            && stack.getItemDamage() == expected.getItemDamage()
+            && ItemStack.areItemStackTagsEqual(stack, expected);
+    }
+
+    private static int indexSignature() {
+        int size = transformerRecipes.size();
+        if (size == 0) {
+            return 0;
+        }
+        int signature = size;
+        signature = 31 * signature + System.identityHashCode(transformerRecipes.get(0));
+        signature = 31 * signature + System.identityHashCode(transformerRecipes.get(size - 1));
+        if (size > 2) {
+            signature = 31 * signature + System.identityHashCode(transformerRecipes.get(size / 2));
+        }
+        return signature;
+    }
+
+    private static void rebuildIndexIfNeeded() {
+        int size = transformerRecipes.size();
+        int signature = indexSignature();
+        if (size == indexedSize && signature == indexedSignature) {
+            return;
+        }
+
+        RECIPE_INDEX.clear();
+        OREDICT_INDEX.clear();
+        for (MTRecipeRecord recipe : transformerRecipes) {
+            if (recipe == null) {
+                continue;
+            }
+            if (recipe.inputOreDict != null) {
+                List<MTRecipeRecord> oreRecipes = OREDICT_INDEX.get(recipe.inputOreDict);
+                if (oreRecipes == null) {
+                    oreRecipes = new ArrayList<>();
+                    OREDICT_INDEX.put(recipe.inputOreDict, oreRecipes);
+                }
+                oreRecipes.add(recipe);
+                continue;
+            }
+            if (recipe.inputStack == null || recipe.inputStack.getItem() == null) {
+                continue;
+            }
+            Item item = recipe.inputStack.getItem();
+            int damage = recipe.inputStack.getItemDamage();
+            Map<Integer, List<MTRecipeRecord>> byDamage = RECIPE_INDEX.get(item);
+            if (byDamage == null) {
+                byDamage = new HashMap<>();
+                RECIPE_INDEX.put(item, byDamage);
+            }
+            List<MTRecipeRecord> recipes = byDamage.get(damage);
+            if (recipes == null) {
+                recipes = new ArrayList<>();
+                byDamage.put(damage, recipes);
+            }
+            recipes.add(recipe);
+        }
+
+        indexedSize = size;
+        indexedSignature = signature;
+    }
+
+    public static void invalidateRecipeIndex() {
+        indexedSize = -1;
+        RECIPE_INDEX.clear();
+        OREDICT_INDEX.clear();
+    }
 
     public void addMTOreDict(String name, String output, int energy) {
         List<ItemStack> inputs = OreDictionary.getOres(name);
         List<ItemStack> outputs = OreDictionary.getOres(output);
-        if (outputs.size() != 0) {
-            if (inputs.size() != 0) {
-                for (ItemStack inputIS : inputs) {
-                    for (ItemStack outputIS : outputs) {
-                        this.addMTRecipe(inputIS.copy(), outputIS.copy(), energy);
-                    }
-                }
-            }
+        if (inputs.isEmpty() || outputs.isEmpty()) {
+            return;
+        }
+        for (ItemStack outputIS : outputs) {
+            this.addOreDictRecipe(name, inputs.get(0), outputIS, energy);
         }
     }
 
     public void addMTOreDict(String input, ItemStack output, int energy) {
-        for (ItemStack inputIS : OreDictionary.getOres(input)) {
-            this.addMTRecipe(inputIS.copy(), output.copy(), energy);
+        List<ItemStack> inputs = OreDictionary.getOres(input);
+        if (!inputs.isEmpty()) {
+            this.addOreDictRecipe(input, inputs.get(0), output, energy);
         }
     }
 
@@ -54,6 +179,26 @@ public class MTRecipeManager implements IMTRecipeManager {
                 this.addMTRecipe(input.copy(), outputIS.copy(), energy);
             }
         }
+    }
+
+    private void addOreDictRecipe(String inputOreDict, ItemStack representative, ItemStack output, int energy) {
+        if (representative == null || output == null) {
+            throw new IllegalArgumentException("MT recipes require non-null input and output stacks.");
+        }
+        if (energy < 0) {
+            throw new IllegalArgumentException("MT recipe energy must not be negative: " + energy);
+        }
+        ItemStack inputStack = representative.copy();
+        inputStack.stackSize = clampStackSize(inputStack.stackSize);
+        ItemStack outputStack = output.copy();
+        outputStack.stackSize = clampStackSize(outputStack.stackSize);
+
+        MTRecipeRecord recipeToAdd = new MTRecipeRecord();
+        recipeToAdd.inputOreDict = inputOreDict;
+        recipeToAdd.inputStack = inputStack;
+        recipeToAdd.outputStack = outputStack;
+        recipeToAdd.energyPerOperation = energy;
+        transformerRecipes.add(recipeToAdd);
     }
 
     public void initRecipes() {
