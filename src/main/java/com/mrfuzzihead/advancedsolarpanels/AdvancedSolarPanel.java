@@ -1,0 +1,460 @@
+package com.mrfuzzihead.advancedsolarpanels;
+
+import net.minecraft.block.Block;
+import net.minecraft.creativetab.CreativeTabs;
+import net.minecraft.init.Blocks;
+import net.minecraft.init.Items;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemArmor.ArmorMaterial;
+import net.minecraft.item.ItemStack;
+import net.minecraftforge.common.config.Configuration;
+import net.minecraftforge.oredict.OreDictionary;
+import net.minecraftforge.oredict.ShapedOreRecipe;
+
+import com.mrfuzzihead.advancedsolarpanels.api.MTAPI;
+import com.mrfuzzihead.advancedsolarpanels.common.ASPServerProxy;
+import com.mrfuzzihead.advancedsolarpanels.common.blocks.BlockAdvSolarPanel;
+import com.mrfuzzihead.advancedsolarpanels.common.blocks.BlockMolecularTransformer;
+import com.mrfuzzihead.advancedsolarpanels.common.config.ASPConfig;
+import com.mrfuzzihead.advancedsolarpanels.common.items.ItemAdvSolarPanel;
+import com.mrfuzzihead.advancedsolarpanels.common.items.ItemAdvanced;
+import com.mrfuzzihead.advancedsolarpanels.common.items.ItemAdvancedSolarHelmet;
+import com.mrfuzzihead.advancedsolarpanels.common.items.ItemMolecularTransformer;
+import com.mrfuzzihead.advancedsolarpanels.common.tiles.TileEntityAdvancedSolarPanel;
+import com.mrfuzzihead.advancedsolarpanels.common.tiles.TileEntityHybridSolarPanel;
+import com.mrfuzzihead.advancedsolarpanels.common.tiles.TileEntityMolecularTransformer;
+import com.mrfuzzihead.advancedsolarpanels.common.tiles.TileEntityQGenerator;
+import com.mrfuzzihead.advancedsolarpanels.common.tiles.TileEntityQuantumSolarPanel;
+import com.mrfuzzihead.advancedsolarpanels.common.tiles.TileEntityUltimateSolarPanel;
+import com.mrfuzzihead.advancedsolarpanels.network.ASPPacketHandler;
+import com.mrfuzzihead.advancedsolarpanels.utils.MTRecipeManager;
+
+import cpw.mods.fml.common.FMLCommonHandler;
+import cpw.mods.fml.common.Mod;
+import cpw.mods.fml.common.Mod.EventHandler;
+import cpw.mods.fml.common.Mod.Instance;
+import cpw.mods.fml.common.SidedProxy;
+import cpw.mods.fml.common.event.FMLInitializationEvent;
+import cpw.mods.fml.common.event.FMLLoadCompleteEvent;
+import cpw.mods.fml.common.event.FMLPostInitializationEvent;
+import cpw.mods.fml.common.event.FMLPreInitializationEvent;
+import cpw.mods.fml.common.network.NetworkRegistry;
+import cpw.mods.fml.common.registry.GameRegistry;
+import cpw.mods.fml.relauncher.Side;
+import ic2.api.item.IC2Items;
+import ic2.api.recipe.RecipeInputItemStack;
+import ic2.api.recipe.Recipes;
+
+@Mod(
+    modid = "AdvancedSolarPanel",
+    name = "Advanced Solar Panels",
+    dependencies = "required-after:IC2; after:gregtech_addon; after:AppliedEnergistics;",
+    version = Tags.VERSION)
+public class AdvancedSolarPanel {
+
+    @SidedProxy(
+        clientSide = "com.mrfuzzihead.advancedsolarpanels.client.ASPClientProxy",
+        serverSide = "com.mrfuzzihead.advancedsolarpanels.common.ASPServerProxy")
+    public static ASPServerProxy proxy;
+    public static Block blockAdvSolarPanel;
+    public static Block blockMolecularTransformer;
+    public static Item itemAdvanced;
+    public static Item advancedSolarHelmet;
+    public static Item hybridSolarHelmet;
+    public static Item ultimateSolarHelmet;
+    public static ItemStack itemSunnarium;
+    public static ItemStack itemSunnariumPart;
+    public static ItemStack itemSunnariumAlloy;
+    public static ItemStack ingotIridium;
+    public static ItemStack itemIrradiantUranium;
+    public static ItemStack itemEnrichedSunnarium;
+    public static ItemStack itemEnrichedSunnariumAlloy;
+    public static ItemStack itemIrradiantGlassPane;
+    public static ItemStack itemIridiumIronPlate;
+    public static ItemStack itemReinforcedIridiumIronPlate;
+    public static ItemStack itemIrradiantReinforcedPlate;
+    public static ItemStack itemQuantumCore;
+    public static ItemStack itemUranIngot;
+    public static ItemStack itemUHSP;
+    public static ItemStack itemMTCore;
+    public static ItemStack itemMolecularTransformer;
+    public static Configuration config;
+    public static String configFileName;
+    public static int advGenDay;
+    public static int advStorage;
+    public static int advOutput;
+    public static int hGenDay;
+    public static int hStorage;
+    public static int hOutput;
+    public static int uhGenDay;
+    public static int uhStorage;
+    public static int uhOutput;
+    public static int qpGenDay;
+    public static int qpStorage;
+    public static int qpOutput;
+    public static int qgbaseProduction;
+    public static int qgbaseMaxPacketSize;
+    public static int blockMolecularTransformerRenderID;
+    public static CreativeTabs ic2Tab;
+    private static boolean disableAdvancedSolarHelmetRecipe;
+    private static boolean disableHybridSolarHelmetRecipe;
+    private static boolean disableUltimateSolarHelmetRecipe;
+    private static boolean disableAdvancedSolarPanelRecipe;
+    private static boolean disableHybridSolarPanelRecipe;
+    private static boolean disableUltimateSolarPanelRecipe;
+    private static boolean disableQuantumSolarPanelRecipe;
+    private static boolean disableMolecularTransformerRecipe;
+    private static boolean disableDoubleSlabRecipe;
+    private static boolean enableSimpleAdvancedSolarPanelRecipes;
+    private static boolean enableHardRecipes;
+    public static boolean solarHelmetLegacyCharging;
+    public static final String CATEGORY_RECIPES = "recipes settings";
+    public static final String CATEGORY_QGENERATOR = "quantum generator";
+    public static Side side;
+    @Instance("AdvancedSolarPanel")
+    public static AdvancedSolarPanel instance = new AdvancedSolarPanel();
+
+    public static ItemStack setItemsSize(ItemStack itemStack, int newSize) {
+        ItemStack newStack = itemStack.copy();
+        newStack.stackSize = newSize;
+        return newStack;
+    }
+
+    public static void getIC2Tab() {
+        for (int i = 0; i < CreativeTabs.creativeTabArray.length; i++) {
+            if ("IC2".equals(CreativeTabs.creativeTabArray[i].getTabLabel())) {
+                ic2Tab = CreativeTabs.creativeTabArray[i];
+            }
+        }
+    }
+
+    public static boolean isSimulating() {
+        return !FMLCommonHandler.instance()
+            .getEffectiveSide()
+            .isClient();
+    }
+
+    public static void addLog(String logLine) {
+        System.out.println("[AdvancedSolarPanel] " + logLine);
+    }
+
+    private static void addCompressorRecipe(String inputName, ItemStack output) {
+        ItemStack input = IC2Items.getItem(inputName);
+        if (input == null) {
+            addLog("IC2 item '" + inputName + "' was not found; compressor recipe skipped.");
+            return;
+        }
+        Recipes.compressor.addRecipe(new RecipeInputItemStack(input, 1), null, new ItemStack[] { output });
+    }
+
+    @EventHandler
+    public void preInit(FMLPreInitializationEvent event) {
+        side = FMLCommonHandler.instance()
+            .getEffectiveSide();
+        MTAPI.manager = MTRecipeManager.instance;
+        ASPConfig cfg = ASPConfig.load(event.getSuggestedConfigurationFile());
+        config = cfg.configuration;
+        configFileName = event.getSuggestedConfigurationFile()
+            .getAbsolutePath();
+        advGenDay = cfg.advGenDay;
+        advStorage = cfg.advStorage;
+        advOutput = cfg.advOutput;
+        hGenDay = cfg.hGenDay;
+        hStorage = cfg.hStorage;
+        hOutput = cfg.hOutput;
+        uhGenDay = cfg.uhGenDay;
+        uhStorage = cfg.uhStorage;
+        uhOutput = cfg.uhOutput;
+        qpGenDay = cfg.qpGenDay;
+        qpStorage = cfg.qpStorage;
+        qpOutput = cfg.qpOutput;
+        qgbaseProduction = cfg.qgProduction;
+        qgbaseMaxPacketSize = cfg.qgMaxPacketSize;
+        disableAdvancedSolarHelmetRecipe = cfg.disableAdvancedSolarHelmetRecipe;
+        disableHybridSolarHelmetRecipe = cfg.disableHybridSolarHelmetRecipe;
+        disableUltimateSolarHelmetRecipe = cfg.disableUltimateSolarHelmetRecipe;
+        disableAdvancedSolarPanelRecipe = cfg.disableAdvancedSolarPanelRecipe;
+        disableHybridSolarPanelRecipe = cfg.disableHybridSolarPanelRecipe;
+        disableUltimateSolarPanelRecipe = cfg.disableUltimateSolarPanelRecipe;
+        disableQuantumSolarPanelRecipe = cfg.disableQuantumSolarPanelRecipe;
+        disableMolecularTransformerRecipe = cfg.disableMolecularTransformerRecipe;
+        disableDoubleSlabRecipe = cfg.disableDoubleSlabRecipe;
+        enableSimpleAdvancedSolarPanelRecipes = cfg.enableSimpleAdvancedSolarPanelRecipes;
+        enableHardRecipes = cfg.enableHardRecipes;
+        solarHelmetLegacyCharging = cfg.solarHelmetLegacyCharging;
+
+        if (side == Side.CLIENT) {
+            getIC2Tab();
+        }
+
+        blockMolecularTransformer = new BlockMolecularTransformer();
+        GameRegistry
+            .registerBlock(blockMolecularTransformer, ItemMolecularTransformer.class, "BlockMolecularTransformer");
+        GameRegistry.registerTileEntity(TileEntityMolecularTransformer.class, "Molecular Transformer");
+        blockAdvSolarPanel = new BlockAdvSolarPanel();
+        GameRegistry.registerBlock(blockAdvSolarPanel, ItemAdvSolarPanel.class, "BlockAdvSolarPanel");
+        GameRegistry.registerTileEntity(TileEntityAdvancedSolarPanel.class, "Advanced Solar Panel");
+        GameRegistry.registerTileEntity(TileEntityHybridSolarPanel.class, "Hybrid Solar Panel");
+        GameRegistry.registerTileEntity(TileEntityUltimateSolarPanel.class, "Ultimate Hybrid Solar Panel");
+        GameRegistry.registerTileEntity(TileEntityQuantumSolarPanel.class, "Quantum Solar Panel");
+        GameRegistry.registerTileEntity(TileEntityQGenerator.class, "Quantum Generator");
+        advancedSolarHelmet = new ItemAdvancedSolarHelmet(
+            ArmorMaterial.DIAMOND,
+            proxy.addArmor("advancedSolarHelmet"),
+            0,
+            1).setUnlocalizedName("advancedSolarHelmet");
+        GameRegistry.registerItem(advancedSolarHelmet, "advanced_solar_helmet");
+        hybridSolarHelmet = new ItemAdvancedSolarHelmet(
+            ArmorMaterial.DIAMOND,
+            proxy.addArmor("hybridSolarHelmet"),
+            0,
+            2).setUnlocalizedName("hybridSolarHelmet");
+        GameRegistry.registerItem(hybridSolarHelmet, "hybrid_solar_helmet");
+        ultimateSolarHelmet = new ItemAdvancedSolarHelmet(
+            ArmorMaterial.DIAMOND,
+            proxy.addArmor("ultimateSolarHelmet"),
+            0,
+            3).setUnlocalizedName("ultimateSolarHelmet");
+        GameRegistry.registerItem(ultimateSolarHelmet, "ultimate_solar_helmet");
+        itemAdvanced = new ItemAdvanced();
+        GameRegistry.registerItem(itemAdvanced, "asp_crafting_items");
+        itemSunnarium = new ItemStack(itemAdvanced.setUnlocalizedName("itemSunnarium"), 1, 0);
+        itemSunnariumAlloy = new ItemStack(itemAdvanced.setUnlocalizedName("itemSunnariumAlloy"), 1, 1);
+        itemIrradiantUranium = new ItemStack(itemAdvanced.setUnlocalizedName("itemIrradiantUranium"), 1, 2);
+        itemEnrichedSunnarium = new ItemStack(itemAdvanced.setUnlocalizedName("itemEnrichedSunnarium"), 1, 3);
+        itemEnrichedSunnariumAlloy = new ItemStack(itemAdvanced.setUnlocalizedName("itemEnrichedSunnariumAlloy"), 1, 4);
+        itemIrradiantGlassPane = new ItemStack(itemAdvanced.setUnlocalizedName("itemIrradiantGlassPlane"), 1, 5);
+        itemIridiumIronPlate = new ItemStack(itemAdvanced.setUnlocalizedName("itemIridiumIronPlate"), 1, 6);
+        itemReinforcedIridiumIronPlate = new ItemStack(
+            itemAdvanced.setUnlocalizedName("itemReinforcedIridiumIronPlate"),
+            1,
+            7);
+        itemIrradiantReinforcedPlate = new ItemStack(
+            itemAdvanced.setUnlocalizedName("itemIrradiantReinforcedPlate"),
+            1,
+            8);
+        itemSunnariumPart = new ItemStack(itemAdvanced.setUnlocalizedName("itemSunnariumPart"), 1, 9);
+        ingotIridium = new ItemStack(itemAdvanced.setUnlocalizedName("ingotIridium"), 1, 10);
+        itemUranIngot = new ItemStack(itemAdvanced.setUnlocalizedName("itemUranIngot"), 1, 11);
+        itemMTCore = new ItemStack(itemAdvanced.setUnlocalizedName("itemMTCore"), 1, 12);
+        itemQuantumCore = new ItemStack(itemAdvanced.setUnlocalizedName("itemQuantumCore"), 1, 13);
+        itemMolecularTransformer = new ItemStack(blockMolecularTransformer, 1, 0);
+        itemUHSP = new ItemStack(blockAdvSolarPanel, 1, 2);
+        addCompressorRecipe("iridiumOre", ingotIridium);
+        addCompressorRecipe("UranFuel", itemUranIngot);
+        addCompressorRecipe("uraniumOre", itemUranIngot);
+        addCompressorRecipe("crushedUraniumOre", itemUranIngot);
+        OreDictionary.registerOre("ingotUranium", itemUranIngot);
+        OreDictionary.registerOre("ingotIridium", ingotIridium);
+        OreDictionary.registerOre("craftingSolarPanelHV", itemUHSP);
+        OreDictionary.registerOre("craftingSunnariumPart", itemSunnariumPart);
+        OreDictionary.registerOre("craftingSunnarium", itemSunnarium);
+        OreDictionary.registerOre("craftingMTCore", itemMTCore);
+        OreDictionary.registerOre("craftingMolecularTransformer", itemMolecularTransformer);
+        proxy.registerRenderers();
+        proxy.load();
+        NetworkRegistry.INSTANCE.registerGuiHandler(this, proxy);
+    }
+
+    @EventHandler
+    public void load(FMLInitializationEvent event) {
+        ASPPacketHandler.load();
+    }
+
+    @EventHandler
+    public void afterModsLoaded(FMLPostInitializationEvent event) {
+        proxy.initRecipes();
+    }
+
+    @EventHandler
+    public void loadComplete(FMLLoadCompleteEvent event) {
+        registerRecipes();
+    }
+
+    private void registerRecipes() {
+        if (!disableAdvancedSolarHelmetRecipe) {
+            Recipes.advRecipes.addRecipe(
+                new ItemStack(advancedSolarHelmet, 1),
+                new Object[] { " A ", "RBR", "FDF", 'A', new ItemStack(blockAdvSolarPanel, 1, 0), 'B',
+                    IC2Items.getItem("nanoHelmet"), 'R', IC2Items.getItem("advancedCircuit"), 'D',
+                    IC2Items.getItem("lvTransformer"), 'F', IC2Items.getItem("insulatedGoldCableItem") });
+        }
+
+        if (!disableHybridSolarHelmetRecipe) {
+            Recipes.advRecipes.addRecipe(
+                new ItemStack(hybridSolarHelmet, 1),
+                new Object[] { " A ", "RBR", "FDF", 'A', new ItemStack(blockAdvSolarPanel, 1, 1), 'B',
+                    IC2Items.getItem("quantumHelmet"), 'R', IC2Items.getItem("advancedCircuit"), 'D',
+                    IC2Items.getItem("hvTransformer"), 'F', IC2Items.getItem("glassFiberCableItem") });
+        }
+
+        if (!disableUltimateSolarHelmetRecipe) {
+            Recipes.advRecipes.addRecipe(
+                new ItemStack(ultimateSolarHelmet, 1),
+                new Object[] { " A ", "RBR", "FDF", 'A', new ItemStack(blockAdvSolarPanel, 1, 2), 'B',
+                    IC2Items.getItem("quantumHelmet"), 'R', IC2Items.getItem("advancedCircuit"), 'D',
+                    IC2Items.getItem("hvTransformer"), 'F', IC2Items.getItem("glassFiberCableItem") });
+            Recipes.advRecipes.addRecipe(
+                new ItemStack(ultimateSolarHelmet, 1),
+                new Object[] { "A", "B", 'A', new ItemStack(blockAdvSolarPanel, 1, 2), 'B',
+                    new ItemStack(hybridSolarHelmet, 1) });
+        }
+
+        if (!enableHardRecipes) {
+            if (!disableAdvancedSolarPanelRecipe) {
+                Recipes.advRecipes.addRecipe(
+                    itemIridiumIronPlate,
+                    new Object[] { "AAA", "ABA", "AAA", 'A', "plateIron", 'B', "ingotIridium" });
+                GameRegistry.addRecipe(
+                    itemReinforcedIridiumIronPlate,
+                    new Object[] { "ABA", "BCB", "ABA", 'A', IC2Items.getItem("advancedAlloy"), 'B',
+                        IC2Items.getItem("carbonPlate"), 'C', itemIridiumIronPlate });
+                GameRegistry.addRecipe(
+                    itemIrradiantReinforcedPlate,
+                    new Object[] { "ABA", "DCD", "AFA", 'A', Items.redstone, 'B', itemSunnariumPart, 'D',
+                        new ItemStack(Items.dye, 1, 4), 'C', itemReinforcedIridiumIronPlate, 'F', Items.diamond });
+                if (enableSimpleAdvancedSolarPanelRecipes) {
+                    GameRegistry.addRecipe(
+                        new ItemStack(blockAdvSolarPanel, 1, 0),
+                        new Object[] { "RRR", "DSD", "ABA", 'R', IC2Items.getItem("reinforcedGlass"), 'D',
+                            IC2Items.getItem("advancedAlloy"), 'S', IC2Items.getItem("solarPanel"), 'A',
+                            IC2Items.getItem("advancedCircuit"), 'B', IC2Items.getItem("advancedMachine") });
+                } else {
+                    GameRegistry.addRecipe(
+                        new ItemStack(blockAdvSolarPanel, 1, 0),
+                        new Object[] { "RRR", "DSD", "ABA", 'R', IC2Items.getItem("reinforcedGlass"), 'D',
+                            IC2Items.getItem("advancedAlloy"), 'S', IC2Items.getItem("solarPanel"), 'A',
+                            IC2Items.getItem("advancedCircuit"), 'B', itemIrradiantReinforcedPlate });
+                }
+            }
+
+            if (!disableUltimateSolarPanelRecipe && !disableAdvancedSolarPanelRecipe) {
+                GameRegistry.addRecipe(
+                    new ItemStack(blockAdvSolarPanel, 1, 2),
+                    new Object[] { " A ", "XMX", "RXR", 'A', Blocks.lapis_block, 'X', IC2Items.getItem("coalChunk"),
+                        'M', new ItemStack(blockAdvSolarPanel, 1, 0), 'R', itemSunnariumAlloy });
+            }
+
+            if (!disableHybridSolarPanelRecipe && !disableAdvancedSolarPanelRecipe) {
+                GameRegistry.addRecipe(
+                    new ItemStack(blockAdvSolarPanel, 1, 1),
+                    new Object[] { "XMX", "DSD", "ABA", 'X', IC2Items.getItem("carbonPlate"), 'M', Blocks.lapis_block,
+                        'D', IC2Items.getItem("iridiumPlate"), 'S', new ItemStack(blockAdvSolarPanel, 1, 0), 'A',
+                        IC2Items.getItem("advancedCircuit"), 'B', itemSunnarium });
+                if (!disableUltimateSolarPanelRecipe) {
+                    GameRegistry.addRecipe(
+                        new ItemStack(blockAdvSolarPanel, 1, 2),
+                        new Object[] { "MMM", "MXM", "MMM", 'M', new ItemStack(blockAdvSolarPanel, 1, 1), 'X',
+                            IC2Items.getItem("advancedCircuit") });
+                }
+            }
+        } else {
+            if (!disableAdvancedSolarPanelRecipe) {
+                for (ItemStack itemStack : OreDictionary.getOres("ingotIridium")) {
+                    GameRegistry.addRecipe(
+                        itemIridiumIronPlate,
+                        new Object[] { "AAA", "ABA", "AAA", 'A', Items.iron_ingot, 'B', itemStack });
+                }
+
+                GameRegistry.addRecipe(
+                    itemReinforcedIridiumIronPlate,
+                    new Object[] { "ABA", "BCB", "ABA", 'A', IC2Items.getItem("advancedAlloy"), 'B',
+                        IC2Items.getItem("carbonPlate"), 'C', itemIridiumIronPlate });
+                GameRegistry.addRecipe(
+                    itemIrradiantReinforcedPlate,
+                    new Object[] { "ABA", "DCD", "AFA", 'A', Items.redstone, 'B', itemSunnariumPart, 'D',
+                        new ItemStack(Items.dye, 1, 4), 'C', itemReinforcedIridiumIronPlate, 'F', Items.diamond });
+                if (enableSimpleAdvancedSolarPanelRecipes) {
+                    GameRegistry.addRecipe(
+                        new ItemStack(blockAdvSolarPanel, 1, 0),
+                        new Object[] { "RRR", "DSD", "ABA", 'R', itemIrradiantGlassPane, 'D',
+                            IC2Items.getItem("advancedAlloy"), 'S', IC2Items.getItem("solarPanel"), 'A',
+                            IC2Items.getItem("advancedCircuit"), 'B', IC2Items.getItem("advancedMachine") });
+                } else {
+                    GameRegistry.addRecipe(
+                        new ItemStack(blockAdvSolarPanel, 1, 0),
+                        new Object[] { "RRR", "DSD", "ABA", 'R', itemIrradiantGlassPane, 'D',
+                            IC2Items.getItem("advancedAlloy"), 'S', IC2Items.getItem("solarPanel"), 'A',
+                            IC2Items.getItem("advancedCircuit"), 'B', itemIrradiantReinforcedPlate });
+                }
+            }
+
+            if (!disableUltimateSolarPanelRecipe && !disableAdvancedSolarPanelRecipe) {
+                GameRegistry.addRecipe(
+                    new ItemStack(blockAdvSolarPanel, 1, 2),
+                    new Object[] { " A ", "XMX", "RXR", 'A', Blocks.lapis_block, 'X', IC2Items.getItem("coalChunk"),
+                        'M', new ItemStack(blockAdvSolarPanel, 1, 0), 'R', itemEnrichedSunnariumAlloy });
+            }
+
+            if (!disableHybridSolarPanelRecipe && !disableAdvancedSolarPanelRecipe) {
+                GameRegistry.addRecipe(
+                    new ItemStack(blockAdvSolarPanel, 1, 1),
+                    new Object[] { "XMX", "DSD", "ABA", 'X', IC2Items.getItem("carbonPlate"), 'M', Blocks.lapis_block,
+                        'D', IC2Items.getItem("iridiumPlate"), 'S', new ItemStack(blockAdvSolarPanel, 1, 0), 'A',
+                        IC2Items.getItem("advancedCircuit"), 'B', itemEnrichedSunnarium });
+            }
+        }
+
+        if (!disableUltimateSolarPanelRecipe && !disableHybridSolarPanelRecipe && !disableAdvancedSolarPanelRecipe) {
+            GameRegistry.addRecipe(
+                new ItemStack(blockAdvSolarPanel, 1, 2),
+                new Object[] { "MMM", "MXM", "MMM", 'M', new ItemStack(blockAdvSolarPanel, 1, 1), 'X',
+                    IC2Items.getItem("advancedCircuit") });
+            GameRegistry.addRecipe(
+                new ItemStack(blockAdvSolarPanel, 8, 1),
+                new Object[] { "X", 'X', new ItemStack(blockAdvSolarPanel, 1, 2) });
+        }
+
+        if (!disableMolecularTransformerRecipe) {
+            ItemStack reflector = IC2Items.getItem("reactorReflectorThick");
+            if (reflector == null || reflector.getItem() == null) {
+                addLog("IC2 item 'reactorReflectorThick' was not found; MT Core recipe skipped.");
+            } else {
+                // Never pass IC2's cached stack into a recipe; the recipe path mutates its damage.
+                GameRegistry.addRecipe(
+                    itemMTCore,
+                    new Object[] { "MXM", "M M", "MXM", 'M', itemIrradiantGlassPane, 'X',
+                        new ItemStack(reflector.getItem(), 1, 1) });
+                GameRegistry.addRecipe(
+                    itemMolecularTransformer,
+                    new Object[] { "MXM", "ABA", "MXM", 'M', IC2Items.getItem("advancedMachine"), 'X',
+                        IC2Items.getItem("evTransformer"), 'A', IC2Items.getItem("advancedCircuit"), 'B', itemMTCore });
+            }
+        }
+
+        if (!disableQuantumSolarPanelRecipe) {
+            GameRegistry.addRecipe(
+                itemQuantumCore,
+                new Object[] { "XRX", "RSR", "XRX", 'X', itemEnrichedSunnariumAlloy, 'R', Items.nether_star, 'S',
+                    Items.ender_eye });
+            GameRegistry.addRecipe(
+                new ItemStack(blockAdvSolarPanel, 1, 3),
+                new Object[] { "XXX", "XRX", "XXX", 'X', new ItemStack(blockAdvSolarPanel, 1, 2), 'R',
+                    itemQuantumCore });
+        }
+
+        GameRegistry.addRecipe(
+            new ShapedOreRecipe(
+                itemIrradiantUranium,
+                new Object[] { " R ", "RSR", " R ", 'R', Items.glowstone_dust, 'S', "ingotUranium" }));
+        GameRegistry.addRecipe(
+            setItemsSize(itemIrradiantGlassPane, 6),
+            new Object[] { "RRR", "ASA", "RRR", 'R', IC2Items.getItem("reinforcedGlass"), 'A', itemIrradiantUranium,
+                'S', Items.glowstone_dust });
+        GameRegistry.addRecipe(
+            itemEnrichedSunnarium,
+            new Object[] { "RRR", "RSR", "RRR", 'R', itemIrradiantUranium, 'S', itemSunnarium });
+        GameRegistry.addRecipe(
+            itemEnrichedSunnariumAlloy,
+            new Object[] { " R ", "RSR", " R ", 'R', itemEnrichedSunnarium, 'S', itemSunnariumAlloy });
+        GameRegistry.addRecipe(
+            itemSunnariumAlloy,
+            new Object[] { "MMM", "MXM", "MMM", 'M', IC2Items.getItem("iridiumPlate"), 'X', itemSunnarium });
+        GameRegistry.addRecipe(itemSunnarium, new Object[] { "XXX", "XXX", "XXX", 'X', itemSunnariumPart });
+        if (!disableDoubleSlabRecipe) {
+            GameRegistry.addRecipe(
+                new ItemStack(Blocks.double_stone_slab, 1, 0),
+                new Object[] { "A", "A", 'A', new ItemStack(Blocks.stone_slab, 1, 0) });
+        }
+    }
+}
