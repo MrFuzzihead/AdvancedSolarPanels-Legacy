@@ -6,6 +6,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.StatCollector;
 
 import org.lwjgl.opengl.GL11;
 
@@ -39,11 +40,18 @@ public class MTRecipeHandler extends TemplateRecipeHandler {
     }
 
     public String getRecipeName() {
-        return "Molecular Transformer";
+        String key = "nei.advancedsolarpanel.molecular_transformer";
+        String translated = StatCollector.translateToLocal(key);
+        return translated.equals(key) ? "Molecular Transformer" : translated;
     }
 
     public String getRecipeId() {
-        return "Molecular Transformer";
+        return "advancedsolarpanel.molecular_transformer";
+    }
+
+    @Override
+    public String getOverlayIdentifier() {
+        return this.getRecipeId();
     }
 
     public void drawExtras(int r) {
@@ -55,9 +63,12 @@ public class MTRecipeHandler extends TemplateRecipeHandler {
         ItemStack outputStack = recipe.output;
         int energy = recipe.energy;
         String formatedEnergy = GuiMolecularTransformer.parsingNumber(String.valueOf(energy));
-        fontRenderer.drawString("Input: " + inputStack.getDisplayName(), 46, 18, 16777215);
-        fontRenderer.drawString("Output: " + outputStack.getDisplayName(), 46, 28, 16777215);
-        fontRenderer.drawString("Energy: " + formatedEnergy, 46, 38, 16777215);
+        String inputLabel = StatCollector.translateToLocal("gui.MolecularTransformer.input") + ": ";
+        String outputLabel = StatCollector.translateToLocal("gui.MolecularTransformer.output") + ": ";
+        String energyLabel = StatCollector.translateToLocal("gui.MolecularTransformer.energyPerOperation") + ": ";
+        fontRenderer.drawString(inputLabel + inputStack.getDisplayName(), 46, 18, 16777215);
+        fontRenderer.drawString(outputLabel + outputStack.getDisplayName(), 46, 28, 16777215);
+        fontRenderer.drawString(energyLabel + formatedEnergy, 46, 38, 16777215);
     }
 
     public String getGuiTexture() {
@@ -77,7 +88,8 @@ public class MTRecipeHandler extends TemplateRecipeHandler {
     }
 
     public void loadCraftingRecipes(String outputId, Object... results) {
-        if (outputId.equals(this.getRecipeId())) {
+        if (this.getRecipeId()
+            .equals(outputId)) {
             for (MTRecipeRecord record : MTRecipeManager.transformerRecipes) {
                 this.arecipes.add(
                     new MTRecipeHandler.CachedMTRecipe(

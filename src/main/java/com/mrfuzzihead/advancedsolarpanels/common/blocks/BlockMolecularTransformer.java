@@ -120,10 +120,6 @@ public class BlockMolecularTransformer extends BlockContainer {
         }
     }
 
-    public TileEntity getBlockEntity() {
-        return null;
-    }
-
     public TileEntity createNewTileEntity(World var1, int i) {
         return this.getBlockEntity(i);
     }

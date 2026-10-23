@@ -3,6 +3,8 @@ package com.mrfuzzihead.advancedsolarpanels.network;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.ChunkCoordinates;
 import net.minecraft.world.WorldServer;
@@ -15,6 +17,12 @@ public class PacketGUIPressButton extends IPacket {
     public int y;
     public int z;
     public int buttonID;
+    private EntityPlayer sender;
+
+    @Override
+    public void setSender(EntityPlayer sender) {
+        this.sender = sender;
+    }
 
     @Override
     public void read(DataInputStream bytes) throws Throwable {
@@ -67,11 +75,16 @@ public class PacketGUIPressButton extends IPacket {
             public void run() {
                 try {
                     WorldServer world = DimensionManager.getWorld(dimensionId);
-                    if (world != null) {
-                        TileEntity tileEntity = world.getTileEntity(tileX, tileY, tileZ);
-                        if (tileEntity instanceof IHasButton) {
-                            ((IHasButton) tileEntity).handleButtonClick(button);
-                        }
+                    if (world == null) {
+                        return;
+                    }
+                    if (!(sender instanceof EntityPlayerMP) || sender.worldObj.provider.dimensionId != dimensionId
+                        || sender.getDistanceSq(tileX + 0.5D, tileY + 0.5D, tileZ + 0.5D) > 64.0D) {
+                        return;
+                    }
+                    TileEntity tileEntity = world.getTileEntity(tileX, tileY, tileZ);
+                    if (tileEntity instanceof IHasButton) {
+                        ((IHasButton) tileEntity).handleButtonClick(button);
                     }
                 } catch (Throwable throwable) {
                     throwable.printStackTrace();

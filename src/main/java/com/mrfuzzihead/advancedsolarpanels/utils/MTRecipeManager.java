@@ -5,6 +5,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -25,6 +26,7 @@ public class MTRecipeManager implements IMTRecipeManager {
 
     public static List<MTRecipeRecord> transformerRecipes = Lists.newArrayList();
     public static MTRecipeManager instance = new MTRecipeManager();
+    private boolean recipesInitialized;
     public static ArrayList<String> defaultRecipeList = new ArrayList<>();
     private static Method getUniqueName_Item;
     private static Method getUniqueName_Block;
@@ -202,11 +204,14 @@ public class MTRecipeManager implements IMTRecipeManager {
     }
 
     public void initRecipes() {
-        transformerRecipes.clear();
+        if (recipesInitialized) {
+            return;
+        }
         if (AdvancedSolarPanel.configFileName == null || AdvancedSolarPanel.configFileName.isEmpty()) {
             AdvancedSolarPanel.addLog("ASP config path is unavailable; MT recipes were not loaded.");
             return;
         }
+        recipesInitialized = true;
 
         String configFilePath = AdvancedSolarPanel.configFileName
             .substring(0, AdvancedSolarPanel.configFileName.lastIndexOf(File.separatorChar) + 1);
@@ -261,6 +266,39 @@ public class MTRecipeManager implements IMTRecipeManager {
     }
 
     @Override
+    public void removeMTRecipe(ItemStack inputItem, ItemStack outputItem) {
+        if (outputItem == null) {
+            return;
+        }
+        Iterator<MTRecipeRecord> iterator = transformerRecipes.iterator();
+        while (iterator.hasNext()) {
+            MTRecipeRecord recipe = iterator.next();
+            if (recipe != null && matchesInput(inputItem, recipe) && stackMatches(recipe.outputStack, outputItem)) {
+                iterator.remove();
+            }
+        }
+        invalidateRecipeIndex();
+    }
+
+    @Override
+    public void clearMTRecipes() {
+        transformerRecipes.clear();
+        invalidateRecipeIndex();
+    }
+
+    @Override
+    public List<MTRecipeRecord> getMTRecipes() {
+        return Collections.unmodifiableList(transformerRecipes);
+    }
+
+    private static boolean stackMatches(ItemStack first, ItemStack second) {
+        return first != null && second != null
+            && first.getItem() == second.getItem()
+            && first.getItemDamage() == second.getItemDamage()
+            && ItemStack.areItemStackTagsEqual(first, second);
+    }
+
+    @Override
     public void addMTRecipe(ItemStack inputItem, ItemStack outputItem, int energyPerOperation) {
         if (inputItem == null || outputItem == null) {
             throw new IllegalArgumentException("MT recipes require non-null input and output stacks.");
@@ -279,6 +317,7 @@ public class MTRecipeManager implements IMTRecipeManager {
         recipeToAdd.outputStack = outputStack;
         recipeToAdd.energyPerOperation = energyPerOperation;
         transformerRecipes.add(recipeToAdd);
+        invalidateRecipeIndex();
     }
 
     public static class RawItemData {

@@ -1,9 +1,5 @@
 package com.mrfuzzihead.advancedsolarpanels.common.tiles;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Random;
-
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.inventory.Container;
@@ -27,14 +23,10 @@ import ic2.api.tile.IWrenchable;
 public class TileEntityQGenerator extends TileEntityBase
     implements IEnergyTile, IWrenchable, IEnergySource, IHasButton {
 
-    public static Random randomizer = new Random();
-    public int ticker;
     private int machineTire;
     public int production;
-    public boolean initialized;
     private short facing;
     public boolean addedToEnergyNet;
-    private boolean created;
     public boolean active;
     public boolean lastState;
     public int maxPacketSize;
@@ -42,15 +34,11 @@ public class TileEntityQGenerator extends TileEntityBase
     private int lastY;
     private int lastZ;
     public boolean loaded = false;
-    private static List<String> fields = Arrays.asList();
 
     public TileEntityQGenerator() {
-        this.created = false;
         this.facing = 2;
-        this.initialized = false;
         this.production = AdvancedSolarPanel.qgbaseProduction;
         this.maxPacketSize = AdvancedSolarPanel.qgbaseMaxPacketSize;
-        this.ticker = randomizer.nextInt(this.tickRate());
         this.lastX = this.xCoord;
         this.lastY = this.yCoord;
         this.lastZ = this.zCoord;
@@ -202,17 +190,8 @@ public class TileEntityQGenerator extends TileEntityBase
             this.worldObj.getBlockMetadata(this.xCoord, this.yCoord, this.zCoord));
     }
 
-    @Override
-    public List<String> getNetworkedFields() {
-        return fields;
-    }
-
     public Container getGuiContainer(InventoryPlayer inventoryplayer) {
         return new ContainerQGenerator(inventoryplayer, this);
-    }
-
-    public String getInvName() {
-        return "QuantumGenerator";
     }
 
     public void changeProductionOutput(int value) {

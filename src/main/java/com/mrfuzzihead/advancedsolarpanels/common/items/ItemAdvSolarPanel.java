@@ -98,6 +98,17 @@ public class ItemAdvSolarPanel extends ItemBlock {
     @SuppressWarnings("unchecked")
     public void addInformation(ItemStack stack, EntityPlayer player, List list, boolean advanced) {
         int metadata = stack.getItemDamage();
+        if (metadata == 4) {
+            list.add(
+                StatCollector.translateToLocal("ic2.item.tooltip.PowerOutput") + " "
+                    + AdvancedSolarPanel.qgbaseProduction
+                    + " EU/t "
+                    + StatCollector.translateToLocal("ic2.item.tooltip.max"));
+            list.add(
+                StatCollector.translateToLocal("gui.QuantumGenerator.packet") + ": "
+                    + AdvancedSolarPanel.qgbaseMaxPacketSize);
+            return;
+        }
         if (metadata < 0 || metadata > 3) {
             return;
         }

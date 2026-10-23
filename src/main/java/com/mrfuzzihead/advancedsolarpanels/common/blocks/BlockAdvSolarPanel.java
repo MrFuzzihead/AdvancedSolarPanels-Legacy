@@ -38,7 +38,6 @@ public class BlockAdvSolarPanel extends BlockContainer {
     public static final int MAX_METADATA = 4;
     private static final int MAX_FACING = 5;
 
-    public boolean qgActive;
     private IIcon[][] iconBuffer;
 
     public BlockAdvSolarPanel() {
@@ -46,7 +45,6 @@ public class BlockAdvSolarPanel extends BlockContainer {
         this.setHardness(3.0F);
         this.setStepSound(Block.soundTypeMetal);
         this.setCreativeTab(AdvancedSolarPanel.ic2Tab);
-        this.qgActive = false;
     }
 
     private static int clampMetadata(int metadata) {

@@ -76,5 +76,7 @@ public class GuiQGenerator extends GuiContainer {
         this.buttonList.add(new GuiButton(4, xGuiPos + 89, yGuiPos + 40, 20, 20, "+1"));
         this.buttonList.add(new GuiButton(5, xGuiPos + 110, yGuiPos + 40, 26, 20, "+10"));
         this.buttonList.add(new GuiButton(6, xGuiPos + 137, yGuiPos + 40, 32, 20, "+100"));
+        this.buttonList.add(new GuiButton(7, xGuiPos + 6, yGuiPos + 9, 32, 11, "-100"));
+        this.buttonList.add(new GuiButton(12, xGuiPos + 6, yGuiPos + 22, 32, 11, "+100"));
     }
 }

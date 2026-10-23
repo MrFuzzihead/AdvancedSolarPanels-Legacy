@@ -2,7 +2,6 @@ package com.mrfuzzihead.advancedsolarpanels.common.tiles;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Random;
 
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.InventoryPlayer;
@@ -44,12 +43,9 @@ public class TileEntityMolecularTransformer extends TileEntityBase
     private static final int[] slots_top = new int[] { 0 };
     private static final int[] slots_bottom = new int[] { 1 };
     private static final int[] slots_sides = new int[] { 1 };
-    public static Random randomizer = new Random();
-    public int ticker;
     public boolean initialized;
     private short facing;
     public boolean addedToEnergyNet;
-    private boolean created;
     public boolean doWork;
     public boolean waitOutputSlot;
     public ItemStack lastRecipeInput;
@@ -76,12 +72,10 @@ public class TileEntityMolecularTransformer extends TileEntityBase
     private static List<String> fields = Arrays.asList();
 
     public TileEntityMolecularTransformer() {
-        this.created = false;
         this.facing = 2;
         this.workSlots = new ItemStack[2];
         this.initialized = false;
         this.machineTire = SINK_TIER;
-        this.ticker = randomizer.nextInt(this.tickRate());
         this.lastX = this.xCoord;
         this.lastY = this.yCoord;
         this.lastZ = this.zCoord;
@@ -130,7 +124,6 @@ public class TileEntityMolecularTransformer extends TileEntityBase
     }
 
     public void intialize() {
-        this.updateVisibility();
         this.initialized = true;
         if (!this.addedToEnergyNet) {
             this.onLoaded();
@@ -313,8 +306,6 @@ public class TileEntityMolecularTransformer extends TileEntityBase
             && ItemStack.areItemStackTagsEqual(first, second);
     }
 
-    public void updateVisibility() {}
-
     public void readFromNBT(NBTTagCompound nbttagcompound) {
         super.readFromNBT(nbttagcompound);
         this.lastX = nbttagcompound.getInteger("lastX");
@@ -449,10 +440,6 @@ public class TileEntityMolecularTransformer extends TileEntityBase
         if (!activeState) {
             this.inputEU = 0;
         }
-    }
-
-    public int gaugeFuelScaled(int i) {
-        return i;
     }
 
     public boolean isUseableByPlayer(EntityPlayer entityplayer) {

@@ -9,7 +9,6 @@ import java.util.Map;
 
 import javax.imageio.ImageIO;
 
-import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ActiveRenderInfo;
 import net.minecraft.client.renderer.Tessellator;
@@ -18,7 +17,6 @@ import net.minecraft.entity.Entity;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.MathHelper;
 import net.minecraft.util.ResourceLocation;
-import net.minecraft.world.World;
 
 import org.lwjgl.opengl.GL11;
 
@@ -38,6 +36,7 @@ public class TileMolecularTransformerRenderer extends TileEntitySpecialRenderer 
         "advancedsolarpanel",
         "textures/models/particles.png");
     public final ModelMolecularTransformer model = new ModelMolecularTransformer();
+    private static final Color CORE_COLOR = new Color(12648447);
     private static Map textureSizeCache = new HashMap();
     public int ticker;
 
@@ -85,7 +84,6 @@ public class TileMolecularTransformerRenderer extends TileEntitySpecialRenderer 
         float posY = (float) y + 0.5F;
         float posZ = (float) z + 0.5F;
         Tessellator tessellator = Tessellator.instance;
-        Color color = new Color(12648447);
         GL11.glPushMatrix();
         GL11.glDepthMask(false);
         GL11.glEnable(3042);
@@ -95,14 +93,16 @@ public class TileMolecularTransformerRenderer extends TileEntitySpecialRenderer 
         int i = this.ticker % 16;
         float size4 = size1 * 4;
         float float_sizeMinus0_01 = size1 - 0.01F;
-        float float_texNudge = 1.0F / (size1 * size1 * 2.0F);
-        float float_reciprocal = 1.0F / size1;
         float x0 = (i % 4 * size1 + 0.0F) / size4;
         float x1 = (i % 4 * size1 + float_sizeMinus0_01) / size4;
         float x2 = (i / 4 * size1 + 0.0F) / size4;
         float x3 = (i / 4 * size1 + float_sizeMinus0_01) / size4;
         tessellator.startDrawingQuads();
-        tessellator.setColorRGBA_F(color.getRed() / 255.0F, color.getGreen() / 255.0F, color.getBlue() / 255.0F, 1.0F);
+        tessellator.setColorRGBA_F(
+            CORE_COLOR.getRed() / 255.0F,
+            CORE_COLOR.getGreen() / 255.0F,
+            CORE_COLOR.getBlue() / 255.0F,
+            1.0F);
         tessellator.addVertexWithUV(
             posX - f1 * scaleCore - f4 * scaleCore,
             posY - f2 * scaleCore,
@@ -141,8 +141,6 @@ public class TileMolecularTransformerRenderer extends TileEntitySpecialRenderer 
         i = 24 + qq;
         float size8 = size2 * 8;
         float_sizeMinus0_01 = size2 - 0.01F;
-        float_texNudge = 1.0F / (size2 * size2 * 2.0F);
-        float_reciprocal = 1.0F / size2;
         x0 = (i % 8 * size2 + 0.0F) / size8;
         x1 = (i % 8 * size2 + float_sizeMinus0_01) / size8;
         x2 = (i / 8 * size2 + 0.0F) / size8;
@@ -204,22 +202,4 @@ public class TileMolecularTransformerRenderer extends TileEntitySpecialRenderer 
         }
     }
 
-    private void rotateBlock(World world, int x, int y, int z, Block block) {
-        if (world != null) {
-            int dir = world.getBlockMetadata(x, y, z);
-            GL11.glPushMatrix();
-            GL11.glRotatef(dir * 90, 0.0F, 1.0F, 0.0F);
-            FMLClientHandler.instance()
-                .getClient().renderEngine.bindTexture(transfTextloc);
-            this.model.render((Entity) null, 0.0F, 0.0F, -0.1F, 0.0F, 0.0F, 0.0625F);
-            GL11.glPopMatrix();
-        } else {
-            GL11.glPushMatrix();
-            GL11.glRotatef(-90.0F, 0.0F, 1.0F, 0.0F);
-            FMLClientHandler.instance()
-                .getClient().renderEngine.bindTexture(transfTextloc);
-            this.model.render((Entity) null, 0.0F, 0.0F, -0.1F, 0.0F, 0.0F, 0.0625F);
-            GL11.glPopMatrix();
-        }
-    }
 }

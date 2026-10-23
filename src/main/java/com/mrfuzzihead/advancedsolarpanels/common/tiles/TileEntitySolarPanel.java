@@ -44,14 +44,11 @@ public class TileEntitySolarPanel extends TileEntityBase
     private short facing;
     private int machineTire;
     public boolean addedToEnergyNet;
-    private boolean created;
     private ItemStack[] chargeSlots;
-    public int fuel;
     private int lastX;
     private int lastY;
     private int lastZ;
     public int storage;
-    private int solarType;
     public String panelName;
     public int production;
     public int maxStorage;
@@ -63,9 +60,7 @@ public class TileEntitySolarPanel extends TileEntityBase
     }
 
     public TileEntitySolarPanel(String gName, int typeSolar, int gDay, int gOutput, int gmaxStorage, int tier) {
-        this.created = false;
         this.facing = 2;
-        this.solarType = typeSolar;
         this.genDay = gDay;
         this.storage = 0;
         this.panelName = gName;
@@ -238,20 +233,12 @@ public class TileEntitySolarPanel extends TileEntityBase
         return this.addedToEnergyNet;
     }
 
-    public int getMaxEnergyOutput() {
-        return this.production;
-    }
-
     public int gaugeEnergyScaled(int i) {
         if (i <= 0 || this.maxStorage <= 0) {
             return 0;
         }
         int scaled = (int) ((long) this.storage * i / this.maxStorage);
         return Math.max(0, Math.min(i, scaled));
-    }
-
-    public int gaugeFuelScaled(int i) {
-        return i;
     }
 
     public boolean isUseableByPlayer(EntityPlayer entityplayer) {
@@ -352,10 +339,6 @@ public class TileEntitySolarPanel extends TileEntityBase
 
     public Container getGuiContainer(InventoryPlayer inventoryplayer) {
         return new ContainerAdvSolarPanel(inventoryplayer, this);
-    }
-
-    public String getInvName() {
-        return null;
     }
 
     public ItemStack getStackInSlotOnClosing(int var1) {

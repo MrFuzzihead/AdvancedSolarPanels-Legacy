@@ -11,9 +11,11 @@ import net.minecraftforge.common.config.Configuration;
 import net.minecraftforge.oredict.OreDictionary;
 import net.minecraftforge.oredict.ShapedOreRecipe;
 
+import com.mrfuzzihead.advancedsolarpanels.api.MTAPI;
 import com.mrfuzzihead.advancedsolarpanels.common.ASPServerProxy;
 import com.mrfuzzihead.advancedsolarpanels.common.blocks.BlockAdvSolarPanel;
 import com.mrfuzzihead.advancedsolarpanels.common.blocks.BlockMolecularTransformer;
+import com.mrfuzzihead.advancedsolarpanels.common.config.ASPConfig;
 import com.mrfuzzihead.advancedsolarpanels.common.items.ItemAdvSolarPanel;
 import com.mrfuzzihead.advancedsolarpanels.common.items.ItemAdvanced;
 import com.mrfuzzihead.advancedsolarpanels.common.items.ItemAdvancedSolarHelmet;
@@ -25,7 +27,7 @@ import com.mrfuzzihead.advancedsolarpanels.common.tiles.TileEntityQGenerator;
 import com.mrfuzzihead.advancedsolarpanels.common.tiles.TileEntityQuantumSolarPanel;
 import com.mrfuzzihead.advancedsolarpanels.common.tiles.TileEntityUltimateSolarPanel;
 import com.mrfuzzihead.advancedsolarpanels.network.ASPPacketHandler;
-import com.mrfuzzihead.advancedsolarpanels.utils.MTRecipeConfig;
+import com.mrfuzzihead.advancedsolarpanels.utils.MTRecipeManager;
 
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.Mod;
@@ -33,6 +35,7 @@ import cpw.mods.fml.common.Mod.EventHandler;
 import cpw.mods.fml.common.Mod.Instance;
 import cpw.mods.fml.common.SidedProxy;
 import cpw.mods.fml.common.event.FMLInitializationEvent;
+import cpw.mods.fml.common.event.FMLLoadCompleteEvent;
 import cpw.mods.fml.common.event.FMLPostInitializationEvent;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import cpw.mods.fml.common.network.NetworkRegistry;
@@ -135,14 +138,6 @@ public class AdvancedSolarPanel {
         System.out.println("[AdvancedSolarPanel] " + logLine);
     }
 
-    private static int clampConfig(String key, int value, int min) {
-        if (value < min) {
-            addLog("Config " + key + "=" + value + " is below the minimum " + min + "; clamping.");
-            return min;
-        }
-        return value;
-    }
-
     private static void addCompressorRecipe(String inputName, ItemStack output) {
         ItemStack input = IC2Items.getItem(inputName);
         if (input == null) {
@@ -156,89 +151,37 @@ public class AdvancedSolarPanel {
     public void preInit(FMLPreInitializationEvent event) {
         side = FMLCommonHandler.instance()
             .getEffectiveSide();
-        Configuration config = new Configuration(event.getSuggestedConfigurationFile());
-
-        try {
-            config.load();
-            configFileName = event.getSuggestedConfigurationFile()
-                .getAbsolutePath();
-            advGenDay = config.get("general", "AdvancedSPGenDay", 8)
-                .getInt(8);
-            advStorage = config.get("general", "AdvancedSPStorage", 32000)
-                .getInt(32000);
-            advOutput = config.get("general", "AdvancedSPOutput", 32)
-                .getInt(32);
-            hGenDay = config.get("general", "HybrydSPGenDay", 64)
-                .getInt(64);
-            hStorage = config.get("general", "HybrydSPStorage", 100000)
-                .getInt(100000);
-            hOutput = config.get("general", "HybrydSPOutput", 128)
-                .getInt(128);
-            uhGenDay = config.get("general", "UltimateHSPGenDay", 512)
-                .getInt(512);
-            uhStorage = config.get("general", "UltimateHSPStorage", 1000000)
-                .getInt(1000000);
-            uhOutput = config.get("general", "UltimateHSPOutput", 512)
-                .getInt(512);
-            qpGenDay = config.get("general", "QuantumSPGenDay", 4096)
-                .getInt(4096);
-            qpStorage = config.get("general", "QuantumSPStorage", 10000000)
-                .getInt(10000000);
-            qpOutput = config.get("general", "QuantumSPOutput", 8192)
-                .getInt(8192);
-            qgbaseProduction = config.get("quantum generator", "quantumGeneratorDefaultProduction", 512)
-                .getInt(512);
-            qgbaseMaxPacketSize = config.get("quantum generator", "quantumGeneratorDefaultPacketSize", 512)
-                .getInt(512);
-            disableAdvancedSolarHelmetRecipe = config
-                .get("recipes settings", "Disable Advanced Solar Helmet recipe", false)
-                .getBoolean(false);
-            disableHybridSolarHelmetRecipe = config.get("recipes settings", "Disable Hybrid Solar Helmet recipe", false)
-                .getBoolean(false);
-            disableUltimateSolarHelmetRecipe = config
-                .get("recipes settings", "Disable Ultimate Solar Helmet recipe", false)
-                .getBoolean(false);
-            disableAdvancedSolarPanelRecipe = config.get("recipes settings", "Disable AdvancedSolarPanel recipe", false)
-                .getBoolean(false);
-            disableHybridSolarPanelRecipe = config.get("recipes settings", "Disable HybridSolarPanel recipe", false)
-                .getBoolean(false);
-            disableUltimateSolarPanelRecipe = config.get("recipes settings", "Disable UltimateSolarPanel recipe", false)
-                .getBoolean(false);
-            disableQuantumSolarPanelRecipe = config.get("recipes settings", "Disable QuantumSolarPanel recipe", false)
-                .getBoolean(false);
-            disableMolecularTransformerRecipe = config
-                .get("recipes settings", "Disable MolecularTransformer recipe", false)
-                .getBoolean(false);
-            disableDoubleSlabRecipe = config.get("recipes settings", "Disable DoubleSlab recipe", false)
-                .getBoolean(false);
-            enableSimpleAdvancedSolarPanelRecipes = config
-                .get("recipes settings", "Enable simple Advanced Solar Panel recipe", false)
-                .getBoolean(false);
-            enableHardRecipes = config.get("recipes settings", "Enable hard recipes", true)
-                .getBoolean(true);
-            solarHelmetLegacyCharging = config.get("general", "solarHelmetLegacyCharging", false)
-                .getBoolean(false);
-
-            advGenDay = clampConfig("AdvancedSPGenDay", advGenDay, 0);
-            advStorage = clampConfig("AdvancedSPStorage", advStorage, 1);
-            advOutput = clampConfig("AdvancedSPOutput", advOutput, 1);
-            hGenDay = clampConfig("HybrydSPGenDay", hGenDay, 0);
-            hStorage = clampConfig("HybrydSPStorage", hStorage, 1);
-            hOutput = clampConfig("HybrydSPOutput", hOutput, 1);
-            uhGenDay = clampConfig("UltimateHSPGenDay", uhGenDay, 0);
-            uhStorage = clampConfig("UltimateHSPStorage", uhStorage, 1);
-            uhOutput = clampConfig("UltimateHSPOutput", uhOutput, 1);
-            qpGenDay = clampConfig("QuantumSPGenDay", qpGenDay, 0);
-            qpStorage = clampConfig("QuantumSPStorage", qpStorage, 1);
-            qpOutput = clampConfig("QuantumSPOutput", qpOutput, 1);
-            qgbaseProduction = clampConfig("quantumGeneratorDefaultProduction", qgbaseProduction, 1);
-            qgbaseMaxPacketSize = clampConfig("quantumGeneratorDefaultPacketSize", qgbaseMaxPacketSize, 1);
-        } catch (Exception var7) {
-            System.out.println("[AdvancedSolarPanels] error occurred parsing config file");
-            throw new RuntimeException(var7);
-        } finally {
-            config.save();
-        }
+        MTAPI.manager = MTRecipeManager.instance;
+        ASPConfig cfg = ASPConfig.load(event.getSuggestedConfigurationFile());
+        config = cfg.configuration;
+        configFileName = event.getSuggestedConfigurationFile()
+            .getAbsolutePath();
+        advGenDay = cfg.advGenDay;
+        advStorage = cfg.advStorage;
+        advOutput = cfg.advOutput;
+        hGenDay = cfg.hGenDay;
+        hStorage = cfg.hStorage;
+        hOutput = cfg.hOutput;
+        uhGenDay = cfg.uhGenDay;
+        uhStorage = cfg.uhStorage;
+        uhOutput = cfg.uhOutput;
+        qpGenDay = cfg.qpGenDay;
+        qpStorage = cfg.qpStorage;
+        qpOutput = cfg.qpOutput;
+        qgbaseProduction = cfg.qgProduction;
+        qgbaseMaxPacketSize = cfg.qgMaxPacketSize;
+        disableAdvancedSolarHelmetRecipe = cfg.disableAdvancedSolarHelmetRecipe;
+        disableHybridSolarHelmetRecipe = cfg.disableHybridSolarHelmetRecipe;
+        disableUltimateSolarHelmetRecipe = cfg.disableUltimateSolarHelmetRecipe;
+        disableAdvancedSolarPanelRecipe = cfg.disableAdvancedSolarPanelRecipe;
+        disableHybridSolarPanelRecipe = cfg.disableHybridSolarPanelRecipe;
+        disableUltimateSolarPanelRecipe = cfg.disableUltimateSolarPanelRecipe;
+        disableQuantumSolarPanelRecipe = cfg.disableQuantumSolarPanelRecipe;
+        disableMolecularTransformerRecipe = cfg.disableMolecularTransformerRecipe;
+        disableDoubleSlabRecipe = cfg.disableDoubleSlabRecipe;
+        enableSimpleAdvancedSolarPanelRecipes = cfg.enableSimpleAdvancedSolarPanelRecipes;
+        enableHardRecipes = cfg.enableHardRecipes;
+        solarHelmetLegacyCharging = cfg.solarHelmetLegacyCharging;
 
         if (side == Side.CLIENT) {
             getIC2Tab();
@@ -311,7 +254,6 @@ public class AdvancedSolarPanel {
         proxy.registerRenderers();
         proxy.load();
         NetworkRegistry.INSTANCE.registerGuiHandler(this, proxy);
-        MTRecipeConfig.doDebug();
     }
 
     @EventHandler
@@ -322,6 +264,14 @@ public class AdvancedSolarPanel {
     @EventHandler
     public void afterModsLoaded(FMLPostInitializationEvent event) {
         proxy.initRecipes();
+    }
+
+    @EventHandler
+    public void loadComplete(FMLLoadCompleteEvent event) {
+        registerRecipes();
+    }
+
+    private void registerRecipes() {
         if (!disableAdvancedSolarHelmetRecipe) {
             Recipes.advRecipes.addRecipe(
                 new ItemStack(advancedSolarHelmet, 1),
@@ -445,7 +395,7 @@ public class AdvancedSolarPanel {
             }
         }
 
-        if (!disableUltimateSolarPanelRecipe) {
+        if (!disableUltimateSolarPanelRecipe && !disableHybridSolarPanelRecipe && !disableAdvancedSolarPanelRecipe) {
             GameRegistry.addRecipe(
                 new ItemStack(blockAdvSolarPanel, 1, 2),
                 new Object[] { "MMM", "MXM", "MMM", 'M', new ItemStack(blockAdvSolarPanel, 1, 1), 'X',

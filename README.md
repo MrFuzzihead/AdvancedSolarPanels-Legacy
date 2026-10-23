@@ -46,7 +46,8 @@ light, not the weather-darkened light level.
 
 All rates are configurable in `config/AdvancedSolarPanel.cfg` under `general`:
 `AdvancedSPGenDay`, `AdvancedSPStorage`, `AdvancedSPOutput`, and the corresponding
-`HybrydSP*`, `UltimateHSP*`, and `QuantumSP*` keys.
+`HybrydSP*`, `UltimateHSP*`, and `QuantumSP*` keys. `*GenDay` is always the 100% clear-day rate;
+the obsolete `*GenNight` keys are detected, logged, and ignored.
 
 ### Wrench behavior
 
@@ -89,8 +90,13 @@ inputItem:stackSize; outputItem:stackSize; energy
 Inputs and outputs can be item ids (`minecraft:item_name-meta` or `modID:item_name-meta`) or ore
 dictionary entries (`oredict:name`). Ore-dictionary inputs are matched dynamically, so entries added
 by other mods later are accepted. A `#` starts a comment. Stack sizes are clamped to 1–64 and negative
-energy is rejected. The machine has one input slot, one output slot, a progress display, and a NEI
-recipe page.
+energy is rejected. If an ore-dictionary output has several entries, the first registered entry is
+used as the displayed/output stack.
+
+The machine has one input slot, one output slot, a progress display, a tooltip, and a NEI recipe page.
+The NEI page is registered through NEI's API: tab icon, catalyst, overlay identifier, localized
+labels, and recipe/usage lookup are provided by the mod. Existing NEI `handlers.csv`/`catalysts.csv`
+entries that still use the old `advsolar.*` class name are ignored; no CSV edit is required.
 
 ## Quantum Generator
 
@@ -100,6 +106,10 @@ configurable EU/t and is disabled by a redstone signal. Its defaults are set in
 `quantumGeneratorDefaultProduction` and `quantumGeneratorDefaultPacketSize`. The packet size is a
 per-tick cap, so the offered output is `min(production, maxPacketSize)`.
 
+The GUI has production and packet-size buttons (use Shift for ×10), shows the current values, and
+the item tooltip lists the configured defaults. Button changes are validated on the server, including
+the sender's dimension and a 64-block interaction distance.
+
 ## Recipes
 
 - The default recipe mode is the “hard” recipe set; enable `Enable hard recipes = false` for the
@@ -108,12 +118,25 @@ per-tick cap, so the offered output is `min(production, maxPacketSize)`.
 - Hybrid and Ultimate panels are upgraded from the previous tier.
 - The Quantum Solar Panel requires the Quantum Core.
 - Helmet recipes use the matching panel plus the IC2 nano/quantum helmet.
-- Individual recipes can be disabled under `recipes settings`.
-- OreDictionary names are used where possible (`ingotUranium`, `ingotIridium`, etc.).
+- Individual recipes can be disabled under `recipes settings`. Upgrade recipes are only registered
+  when every panel they depend on is enabled.
+- OreDictionary names are used where possible (`ingotUranium`, `ingotIridium`, etc.). IC2 item
+  lookups that are optional (compressor inputs and the MT Core reflector) are guarded, so a missing
+  item skips only that recipe instead of creating an invalid recipe.
+- Recipes are registered on `FMLLoadCompleteEvent`, after other mods have finished registering their
+  items and ore-dictionary entries.
+
+## Molecular Transformer API
+
+`com.mrfuzzihead.advancedsolarpanels.api.MTAPI.manager` is initialized during pre-init, so other mods
+can add recipes during post-init. `IMTRecipeManager` exposes `addMTRecipe`, `removeMTRecipe`,
+`clearMTRecipes`, and a read-only `getMTRecipes()` view. The new methods have no-op/empty defaults,
+so existing third-party implementations remain source- and binary-compatible.
 
 ## Configuration
 
-`config/AdvancedSolarPanel.cfg` includes:
+`config/AdvancedSolarPanel.cfg` is loaded into a validated, typed model and saved with section
+comments. It includes:
 
 | Section | Examples | Purpose |
 | --- | --- | --- |
@@ -121,7 +144,9 @@ per-tick cap, so the offered output is `min(production, maxPacketSize)`.
 | `recipes settings` | `Disable HybridSolarPanel recipe`, `Enable hard recipes` | Recipe toggles |
 | `quantum generator` | `quantumGeneratorDefaultProduction`, `quantumGeneratorDefaultPacketSize` | QGen defaults |
 
-Negative generation values are clamped to 0; storage and output values are clamped to at least 1.
+Negative generation values are clamped to 0; storage, output, and QGen values are clamped to at
+least 1. The old `*GenNight` keys are not migrated because generation is now derived from the
+100% day rate.
 
 ## Building and testing
 
@@ -135,17 +160,20 @@ Gradle.
 ./gradlew runServer    # development server
 ```
 
-Built jars are placed in `build/libs/`. The current test suite covers solar generation math, helmet
-tiers/charge rules/tooltips, MT recipe validation and OreDict/index matching, MT energy-buffer
-behavior, container/slot rules, and namespace/lang resource invariants.
+Built jars are placed in `build/libs/`. The current test suite has 64 tests covering solar generation
+math, helmet tiers/charge rules/tooltips, MT recipe validation/parser/API/NBT state, MT
+energy-buffer behavior, QGen clamping/NBT, container slot ranges, packet round-trips, and namespace/
+lang resource invariants. Rendering, NEI layout, multiplayer helmet state, and actual energy-net
+behavior still need in-game/manual validation.
 
 ## Compatibility notes
 
 - The mod id is `AdvancedSolarPanel` and existing registry names/worlds must not be renamed.
-- The Molecular Transformer recipe file and NEI integration are documented in
-  [`CODEBASE_ANALYSIS.md`](CODEBASE_ANALYSIS.md).
-- GT5-Unofficial and NewHorizonsCoreMod reference the old `advsolar.*` internal classes; the
-  compatibility impact of the package rename is covered in `CODEBASE_ANALYSIS.md` §6.
+- The source package is `com.mrfuzzihead.advancedsolarpanels`; the old `advsolar.*` internals are not
+  provided as compatibility shims. GT5-Unofficial/NewHorizonsCoreMod builds that target those internals
+  are outside this fork's supported compatibility scope.
+- `NAMESPACE_CHANGE.md` has been removed; its completed migration notes are summarized in
+  [`CHANGELOG.md`](CHANGELOG.md) and [`CODEBASE_ANALYSIS.md`](CODEBASE_ANALYSIS.md).
 
 ## Credits
 

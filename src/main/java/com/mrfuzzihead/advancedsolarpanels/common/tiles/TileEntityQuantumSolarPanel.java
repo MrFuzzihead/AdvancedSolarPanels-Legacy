@@ -13,9 +13,4 @@ public class TileEntityQuantumSolarPanel extends TileEntitySolarPanel {
             AdvancedSolarPanel.qpStorage,
             5);
     }
-
-    @Override
-    public String getInvName() {
-        return "Quantum Solar Panel";
-    }
 }

@@ -34,3 +34,5 @@ gui.QuantumGenerator.power=Power
 gui.QuantumGenerator.packet=Max Packet
 item.advancedSolarHelmet.desc=Charges the chestplate using available sunlight.
 item.advancedSolarHelmet.air=Also replenishes underwater air.
+nei.advancedsolarpanel.molecular_transformer=Molecular Transformer
+item.molecularTransformer.desc=Converts items using EU.

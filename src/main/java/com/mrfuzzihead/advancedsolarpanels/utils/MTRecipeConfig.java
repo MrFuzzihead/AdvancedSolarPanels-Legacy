@@ -120,8 +120,6 @@ public class MTRecipeConfig {
         defaultLines.add(result);
     }
 
-    public static void doDebug() {}
-
     public static void writeGuide(BufferedWriter bw) {
         try {
             bw.write(

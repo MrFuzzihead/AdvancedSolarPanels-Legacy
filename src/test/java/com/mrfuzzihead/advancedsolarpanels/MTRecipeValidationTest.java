@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NBTTagCompound;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -80,5 +81,51 @@ class MTRecipeValidationTest {
         MTRecipeRecord recipe = MTRecipeManager.transformerRecipes.get(0);
         assertEquals(2, recipe.inputStack.stackSize);
         assertEquals(1, recipe.outputStack.stackSize);
+    }
+
+    @Test
+    void apiCanRemoveAndClearRecipes() {
+        Item item = new Item();
+        ItemStack input = new ItemStack(item, 1, 0);
+        ItemStack output = stack(1);
+        MTRecipeManager.instance.addMTRecipe(input, output, 10);
+        MTRecipeManager.instance.addMTRecipe(new ItemStack(item, 1, 1), output, 20);
+        assertEquals(
+            2,
+            MTRecipeManager.instance.getMTRecipes()
+                .size());
+
+        MTRecipeManager.instance.removeMTRecipe(input, output);
+        assertEquals(
+            1,
+            MTRecipeManager.instance.getMTRecipes()
+                .size());
+
+        MTRecipeManager.instance.clearMTRecipes();
+        assertEquals(0, MTRecipeManager.transformerRecipes.size());
+    }
+
+    @Test
+    void removeMatchesOutputNbt() {
+        ItemStack input = stack(1);
+        ItemStack output = stack(1);
+        output.stackTagCompound = new NBTTagCompound();
+        output.stackTagCompound.setInteger("marker", 1);
+        MTRecipeManager.instance.addMTRecipe(input, output, 10);
+
+        MTRecipeManager.instance.removeMTRecipe(input, stack(1));
+        assertEquals(1, MTRecipeManager.transformerRecipes.size());
+
+        MTRecipeManager.instance.removeMTRecipe(input, output);
+        assertEquals(0, MTRecipeManager.transformerRecipes.size());
+    }
+
+    @Test
+    void apiReturnsReadOnlyRecipeList() {
+        MTRecipeManager.instance.addMTRecipe(stack(1), stack(1), 10);
+        assertThrows(
+            UnsupportedOperationException.class,
+            () -> MTRecipeManager.instance.getMTRecipes()
+                .clear());
     }
 }

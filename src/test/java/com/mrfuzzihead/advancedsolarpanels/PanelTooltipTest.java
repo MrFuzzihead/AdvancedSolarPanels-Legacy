@@ -28,6 +28,8 @@ class PanelTooltipTest {
         AdvancedSolarPanel.hStorage = 100_000;
         AdvancedSolarPanel.uhStorage = 1_000_000;
         AdvancedSolarPanel.qpStorage = 10_000_000;
+        AdvancedSolarPanel.qgbaseProduction = 8192;
+        AdvancedSolarPanel.qgbaseMaxPacketSize = 8192;
         this.item = new ItemAdvSolarPanel(new BlockAdvSolarPanel());
     }
 
@@ -65,9 +67,18 @@ class PanelTooltipTest {
     }
 
     @Test
-    void qgenHasNoPanelTooltip() {
+    void qgenTooltipShowsProductionAndPacket() {
         List<String> lines = new ArrayList<>();
         this.item.addInformation(new ItemStack(this.item, 1, 4), null, lines, false);
-        assertTrue(lines.isEmpty());
+        assertEquals(2, lines.size());
+        assertTrue(
+            lines.get(0)
+                .contains("8192"));
+        assertTrue(
+            lines.get(0)
+                .contains("EU/t"));
+        assertTrue(
+            lines.get(1)
+                .contains("8192"));
     }
 }

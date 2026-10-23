@@ -13,9 +13,4 @@ public class TileEntityAdvancedSolarPanel extends TileEntitySolarPanel {
             AdvancedSolarPanel.advStorage,
             1);
     }
-
-    @Override
-    public String getInvName() {
-        return "Adv Solar Panel";
-    }
 }

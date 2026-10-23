@@ -5,7 +5,11 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 
+import net.minecraft.network.INetHandler;
+import net.minecraft.network.NetHandlerPlayServer;
+
 import cpw.mods.fml.common.network.FMLIndexedMessageToMessageCodec;
+import cpw.mods.fml.common.network.NetworkRegistry;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 
@@ -44,6 +48,12 @@ public class ASPChannelHandler extends FMLIndexedMessageToMessageCodec<IPacket> 
             return;
         }
 
+        INetHandler netHandler = ctx.channel()
+            .attr(NetworkRegistry.NET_HANDLER)
+            .get();
+        if (netHandler instanceof NetHandlerPlayServer) {
+            msg.setSender(((NetHandlerPlayServer) netHandler).playerEntity);
+        }
         msg.execute();
     }
 }
