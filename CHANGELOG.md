@@ -15,7 +15,8 @@
 - Typed, validated `ASPConfig` model with section comments and detection/logging of obsolete
   `*GenNight` keys.
 - Tests for MT API mutation, MT recipe parser edge cases, MT state/description packets, QGen
-  clamps/NBT, container slot ranges, and QGen tooltips.
+  clamps/NBT/offered energy, container slot ranges and transfers, packet NBT/codec round-trips,
+  item-stack/slot helpers, numeric formatting, and QGen tooltips.
 
 ### Changed
 
@@ -44,7 +45,7 @@
 
 ### Validation
 
-- `./gradlew test --offline`: **64 tests, 0 failures**.
+- `./gradlew test --offline`: **76 tests, 0 failures**.
 - `./gradlew build --offline` and Spotless pass.
 - In-game validation still covers rendering, NEI layout, multiplayer helmet state, and energy-net
   behavior.

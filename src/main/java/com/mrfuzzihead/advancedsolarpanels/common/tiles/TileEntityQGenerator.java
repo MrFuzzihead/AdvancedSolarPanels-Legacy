@@ -208,9 +208,16 @@ public class TileEntityQGenerator extends TileEntityBase
         return true;
     }
 
+    public static double offeredEnergy(int production, int maxPacketSize, boolean redstonePowered) {
+        if (redstonePowered) {
+            return 0.0D;
+        }
+        return Math.min(Math.max(0, production), Math.max(0, maxPacketSize));
+    }
+
     public double getOfferedEnergy() {
         this.getActive();
-        return !this.active ? Math.min(this.production, this.maxPacketSize) : 0.0D;
+        return offeredEnergy(this.production, this.maxPacketSize, this.active);
     }
 
     public void drawEnergy(double amount) {}

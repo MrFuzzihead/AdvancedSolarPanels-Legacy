@@ -29,6 +29,14 @@ class QGeneratorTest {
     }
 
     @Test
+    void offeredEnergyHonorsRedstoneAndPacketCap() {
+        assertEquals(0.0D, TileEntityQGenerator.offeredEnergy(100, 50, true), 0.0D);
+        assertEquals(50.0D, TileEntityQGenerator.offeredEnergy(100, 50, false), 0.0D);
+        assertEquals(100.0D, TileEntityQGenerator.offeredEnergy(100, 500, false), 0.0D);
+        assertEquals(0.0D, TileEntityQGenerator.offeredEnergy(-5, 50, false), 0.0D);
+    }
+
+    @Test
     void productionAndPacketSizeCannotOverflow() {
         TileEntityQGenerator generator = new TileEntityQGenerator();
         generator.production = Integer.MAX_VALUE;

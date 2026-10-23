@@ -14,6 +14,6 @@ public class MySlot extends Slot {
     }
 
     public boolean isItemValid(ItemStack par1ItemStack) {
-        return this.canPutInSlot;
+        return Boolean.TRUE.equals(this.canPutInSlot);
     }
 }

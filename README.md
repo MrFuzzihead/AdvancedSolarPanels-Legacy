@@ -160,10 +160,10 @@ Gradle.
 ./gradlew runServer    # development server
 ```
 
-Built jars are placed in `build/libs/`. The current test suite has 64 tests covering solar generation
+Built jars are placed in `build/libs/`. The current test suite has 76 tests covering solar generation
 math, helmet tiers/charge rules/tooltips, MT recipe validation/parser/API/NBT state, MT
-energy-buffer behavior, QGen clamping/NBT, container slot ranges, packet round-trips, and namespace/
-lang resource invariants. Rendering, NEI layout, multiplayer helmet state, and actual energy-net
+energy-buffer behavior, QGen clamping/NBT/offered energy, container slot ranges and transfers,
+packet NBT/codec round-trips, item-stack/slot helpers, and namespace/lang resource invariants. Rendering, NEI layout, multiplayer helmet state, and actual energy-net
 behavior still need in-game/manual validation.
 
 ## Compatibility notes

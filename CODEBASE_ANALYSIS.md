@@ -11,7 +11,7 @@
 
 **Method:** static review of 45 Java files (~5,000 lines), resource/lang audit, source/metadata validation, build check, namespace-report verification, decompiled IC2/upstream comparison, and a formula-level simulation of the 1.7.10 sun/light math.
 
-> **First-batch fixes implemented after this review:** the NEI compile dependency was corrected, the MT Core reflector recipe now uses a fresh stack, packets are scheduled onto the game thread (server task queue + client task scheduler), `Thread.getAllStackTraces()` was removed, the MT GUI recipe-index crash and static caption leak were fixed, MT recipes are validated (non-negative energy, 1–64 stack sizes), the MT energy buffer/progress is persisted and capped, `getDemandedEnergy` accounts for buffered energy, output-blocked injection is rejected, metadata/config/divide-by-zero/NPE guards were added, panel charge slots now use IC2-style simulated charge acceptance (electric, not full, not stacked), panel drops now use IC2’s wrench/casing behavior, `modId`/`modName` metadata now match `@Mod`, metal block sounds were set on the machines, and the JUnit suite now has 64 tests (`./gradlew build` passes).
+> **First-batch fixes implemented after this review:** the NEI compile dependency was corrected, the MT Core reflector recipe now uses a fresh stack, packets are scheduled onto the game thread (server task queue + client task scheduler), `Thread.getAllStackTraces()` was removed, the MT GUI recipe-index crash and static caption leak were fixed, MT recipes are validated (non-negative energy, 1–64 stack sizes), the MT energy buffer/progress is persisted and capped, `getDemandedEnergy` accounts for buffered energy, output-blocked injection is rejected, metadata/config/divide-by-zero/NPE guards were added, panel charge slots now use IC2-style simulated charge acceptance (electric, not full, not stacked), panel drops now use IC2’s wrench/casing behavior, `modId`/`modName` metadata now match `@Mod`, metal block sounds were set on the machines, and the JUnit suite now has 76 tests (`./gradlew build` passes).
 >
 >
 > **Second-batch changes implemented:** real panel source/charge tiers (1/2/3/5), MT sink tier EV (4),
@@ -1184,7 +1184,7 @@ $ ./gradlew build --offline
 BUILD SUCCESSFUL
 ```
 
-The test baseline currently has 64 passing tests across fifteen classes, including
+The test baseline currently has 76 passing tests across twenty classes, including
 `SolarPanelGenerationTest`, `PanelTooltipTest`, `SolarTierTest`, `SolarMathTest`, `HelmetRulesTest`,
 `HelmetItemTest`, `MTRecipeValidationTest`, `MTRecipeConfigTest`, `MolecularTransformerLogicTest`,
 `MolecularTransformerStateTest`, `QGeneratorTest`, `ContainerSlotTest`, `NetworkTaskTest`,

@@ -16,6 +16,7 @@ import com.mrfuzzihead.advancedsolarpanels.common.container.ContainerMolecularTr
 import com.mrfuzzihead.advancedsolarpanels.common.tiles.TileEntityMolecularTransformer;
 import com.mrfuzzihead.advancedsolarpanels.utils.MTRecipeManager;
 import com.mrfuzzihead.advancedsolarpanels.utils.MTRecipeRecord;
+import com.mrfuzzihead.advancedsolarpanels.utils.NumberFormatting;
 
 import cpw.mods.fml.client.FMLClientHandler;
 
@@ -80,20 +81,7 @@ public class GuiMolecularTransformer extends GuiContainer {
     }
 
     public static String parsingNumber(String number) {
-        String tmpString = "";
-        int count = 0;
-
-        for (int i = number.length() - 1; i >= 0; i--) {
-            if (count == 3) {
-                tmpString = " " + tmpString;
-                count = 0;
-            }
-
-            count++;
-            tmpString = number.charAt(i) + tmpString;
-        }
-
-        return tmpString;
+        return NumberFormatting.groupDigits(number);
     }
 
     protected void drawGuiContainerForegroundLayer(int par1, int par2) {
