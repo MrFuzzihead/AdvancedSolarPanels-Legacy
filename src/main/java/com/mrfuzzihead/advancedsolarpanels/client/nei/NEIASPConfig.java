@@ -21,17 +21,25 @@ public class NEIASPConfig implements IConfigureNEI {
         if (catalyst != null) {
             API.addRecipeCatalyst(catalyst, new MTRecipeHandler(), 0);
         }
+
+        // NEI posts the initial NEIRegisterHandlerInfosEvent before loading the plugins that subscribe to it,
+        // so the event handler below is too late for the first handler-info pass. Register directly here;
+        // the event subscription still covers later reloads (for example the "load handlers from config" option).
+        new NEIRegisterHandlerInfosEvent().registerHandlerInfo(createHandlerInfo());
     }
 
     @SubscribeEvent
     public void registerHandlerInfo(NEIRegisterHandlerInfosEvent event) {
-        HandlerInfo info = new HandlerInfo.Builder(MTRecipeHandler.class, "Advanced Solar Panels", "AdvancedSolarPanel")
+        event.registerHandlerInfo(createHandlerInfo());
+    }
+
+    private HandlerInfo createHandlerInfo() {
+        return new HandlerInfo.Builder(MTRecipeHandler.class, "Advanced Solar Panels", "AdvancedSolarPanel")
             .setDisplayStack(AdvancedSolarPanel.itemMolecularTransformer)
             .setWidth(167)
             .setHeight(67)
             .setMultipleWidgetsAllowed(true)
             .build();
-        event.registerHandlerInfo(info);
     }
 
     public String getName() {
